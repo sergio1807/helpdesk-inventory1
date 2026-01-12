@@ -15,8 +15,8 @@ app.add_middleware(
 
 # 2. Función de conexión (ESTA ES LA QUE TE FALTABA)
 def conectar_db():
-    conexion = sqlite3.connect("helpdesk.db")
-    conexion.row_factory = sqlite3.Row  # Permite acceder a columnas por nombre
+    # Nos conectamos a la nube en lugar de a un archivo local
+    conexion = psycopg2.connect('postgresql://neondb_owner:npg_fbspi5NthvQ8@ep-shy-rain-aby96mld-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
     return conexion
 
 # 3. Inicialización de la base de datos

@@ -1,3 +1,4 @@
 fastapi
 uvicorn
 aiofiles
+psycopg2-binary
