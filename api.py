@@ -59,19 +59,28 @@ def obtener_activos():
 @app.post("/crear")
 def crear_activo(datos: dict = Body(...)):
     conexion = conectar_db()
+    # Usamos RealDictCursor para que sea compatible con tu código anterior
     cursor = conexion.cursor()
     try:
+        # Extraemos los datos del JSON
+        categoria = datos.get('categoria')
+        modelo = datos.get('modelo')
+        serie = datos.get('serie')
+
+        # Insertamos usando %s (Sintaxis oficial de PostgreSQL/psycopg2)
         cursor.execute(
-            "INSERT INTO activos (categoria, modelo, serie) VALUES (?, ?, ?)",
-            (datos.get('categoria'), datos.get('modelo'), datos.get('serie'))
+            "INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)",
+            (categoria, modelo, serie)
         )
         conexion.commit()
+        print("✅ Registro insertado con éxito")
         return {"status": "success"}
     except Exception as e:
+        print(f"❌ Error al insertar: {e}")
         return {"status": "error", "message": str(e)}
     finally:
+        cursor.close()
         conexion.close()
-
 @app.post("/asignar")
 def asignar_activo(datos: dict = Body(...)):
     conexion = conectar_db()
