@@ -1,8 +1,10 @@
 import sqlite3
+import psycopg2
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-
+from psycopg2.extras import RealDictCursor
+import os
 app = FastAPI()
 
 # 1. Configuración de CORS para que el navegador no bloquee la web
@@ -17,7 +19,7 @@ app.add_middleware(
 def conectar_db():
     # Nos conectamos a la nube en lugar de a un archivo local
     conexion = psycopg2.connect('postgresql://neondb_owner:npg_fbspi5NthvQ8@ep-shy-rain-aby96mld-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
-    return conexion
+    return psycopg2.connect('postgresql://neondb_owner:npg_fbspi5NthvQ8@ep-shy-rain-aby96mld-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
 
 # 3. Inicialización de la base de datos
 def inicializar_db():
