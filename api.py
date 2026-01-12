@@ -19,7 +19,7 @@ app.add_middleware(
 def conectar_db():
     # Nos conectamos a la nube en lugar de a un archivo local
     conexion = psycopg2.connect('postgresql://neondb_owner:npg_fbspi5NthvQ8@ep-shy-rain-aby96mld-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
-    return psycopg2.connect('postgresql://neondb_owner:npg_fbspi5NthvQ8@ep-shy-rain-aby96mld-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
+    return conexion
 
 # 3. Inicialización de la base de datos
 def inicializar_db():
@@ -27,7 +27,7 @@ def inicializar_db():
     cursor = conexion.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS activos (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             categoria TEXT,
             modelo TEXT,
             serie TEXT UNIQUE,
