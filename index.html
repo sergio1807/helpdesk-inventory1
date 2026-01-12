@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>IT Helpdesk Inventory</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f0f2f5;
+            padding: 20px;
+        }
+
+        .status-disponible {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .status-asignado {
+            color: #007bff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container bg-white p-4 rounded shadow-sm">
+        <h2 class="mb-4">🖥️ IT Asset Management</h2>
+
+        <input type="text" id="buscador" class="form-control mb-4" placeholder="Buscar por serie, modelo o usuario..."
+            onkeyup="filtrar()">
+
+        <div class="row g-3 mb-4 p-3 border rounded bg-light">
+            <div class="col-md-3">
+                <select id="categoria" class="form-select">
+                    <option value="Laptop">Laptop</option>
+                    <option value="Monitor">Monitor</option>
+                    <option value="Periférico">Periférico</option>
+                    <option value="Servidor">Servidor</option>
+                </select>
+            </div>
+            <div class="col-md-3"><input type="text" id="modelo" class="form-control"
+                    placeholder="Modelo (Ej: ThinkPad X1)"></div>
+            <div class="col-md-3"><input type="text" id="serie" class="form-control" placeholder="Nº de Serie"></div>
+            <div class="col-md-3"><button class="btn btn-dark w-100" onclick="guardar()">Registrar Equipo</button></div>
+        </div>
+
+        <table class="table table-hover" id="tabla">
+            <thead class="table-secondary">
+                <tr>
+                    <th>Categoría</th>
+                    <th>Modelo</th>
+                    <th>S/N</th>
+                    <th>Estado</th>
+                    <th>Usuario</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        function cargar() {
+            fetch('activos')
+                .then(res => res.json())
+                .then(datos => {
+                    const tbody = document.querySelector('#tabla tbody');
+                    tbody.innerHTML = '';
+                    datos.forEach(a => {
+                        tbody.innerHTML += `
+                        <tr>
+                            <td>${a.categoria}</td>
+                            <td>${a.modelo}</td>
+                            <td><code>${a.serie}</code></td>
+                            <td class="status-${a.estado.toLowerCase()}">${a.estado}</td>
+                            <td>${a.usuario}</td>
+                            <td>
+                                <button class="btn btn-outline-primary btn-sm" onclick="asignar(${a.id})">👤 Asignar</button>
+                                <button class="btn btn-outline-danger btn-sm" onclick="borrar(${a.id})">🗑️</button>
+                            </td>
+                        </tr>
+                    `;
+                    });
+                });
+        }
+
+        function guardar() {
+            const data = {
+                categoria: document.getElementById('categoria').value,
+                modelo: document.getElementById('modelo').value,
+                serie: document.getElementById('serie').value
+            };
+            fetch('crear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => {
+                document.getElementById('modelo').value = '';
+                document.getElementById('serie').value = '';
+                cargar();
+            });
+        }
+
+        function asignar(id) {
+            const user = prompt("Nombre del usuario asignado:");
+            if (user) {
+                fetch('asignar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, usuario: user })
+                }).then(() => cargar());
+            }
+        }
+
+        function borrar(id) {
+            if (confirm("¿Estás seguro de eliminar este activo?")) {
+                fetch(`eliminar/${id}`, { method: 'DELETE' })
+                    .then(() => cargar());
+            }
+        }
+
+        function filtrar() {
+            let val = document.getElementById("buscador").value.toLowerCase();
+            let filas = document.querySelectorAll("#tabla tbody tr");
+            filas.forEach(f => f.style.display = f.innerText.toLowerCase().includes(val) ? "" : "none");
+        }
+
+        cargar();
+    </script>
+</body>
+
+</html>
