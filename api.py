@@ -119,3 +119,21 @@ def eliminar_activo(id: int):
     conexion.commit()
     conexion.close()
     return {"status": "success"}
+
+@app.get("/exportar")
+def exportar():
+    conn = conectar_db()
+    # Leemos la tabla directamente a un DataFrame de Pandas
+    df = pd.read_sql("SELECT * FROM activos", conn)
+    conn.close()
+
+    output = BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Inventario')
+    output.seek(0)
+
+    return StreamingResponse(
+        output, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        headers={"Content-Disposition": "attachment; filename=inventario_it.xlsx"}
+    )
