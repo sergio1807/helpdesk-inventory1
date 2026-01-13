@@ -18,25 +18,22 @@
             transition: 0.3s;
         }
 
-        .card-stats:hover {
-            transform: translateY(-5px);
-        }
-
         .status-disponible {
-            badge-bg: #d1e7dd;
             color: #0f5132;
             background: #d1e7dd;
-            padding: 5px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
+            font-weight: bold;
         }
 
         .status-asignado {
             color: #084298;
             background: #cfe2ff;
-            padding: 5px 10px;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 0.8rem;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -45,33 +42,41 @@
     <div class="container py-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-dark"><i class="bi bi-cpu-fill me-2"></i>IT Asset Management</h2>
-            <button onclick="window.location.href='/exportar'" class="btn btn-success rounded-pill">
-                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Reporte
+            <button onclick="window.location.href='/exportar'" class="btn btn-success rounded-pill px-4">
+                <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
             </button>
         </div>
 
-        <div class="row g-4 mb-5">
+        <div class="row g-4 mb-4">
             <div class="col-md-4">
-                <div class="card card-stats bg-white shadow-sm p-4 text-center">
-                    <h6 class="text-muted text-uppercase small fw-bold">Total Activos</h6>
-                    <h2 id="total" class="display-6 fw-bold text-dark">0</h2>
+                <div class="card card-stats shadow-sm p-4 text-center">
+                    <h6>Total</h6>
+                    <h2 id="total">0</h2>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card card-stats bg-white shadow-sm p-4 text-center">
-                    <h6 class="text-muted text-uppercase small fw-bold text-success">Disponibles</h6>
-                    <h2 id="disp" class="display-6 fw-bold text-success">0</h2>
+                <div class="card card-stats shadow-sm p-4 text-center text-success">
+                    <h6>Disponibles</h6>
+                    <h2 id="disp">0</h2>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card card-stats bg-white shadow-sm p-4 text-center">
-                    <h6 class="text-muted text-uppercase small fw-bold text-primary">En Uso</h6>
-                    <h2 id="uso" class="display-6 fw-bold text-primary">0</h2>
+                <div class="card card-stats shadow-sm p-4 text-center text-primary">
+                    <h6>Asignados</h6>
+                    <h2 id="uso">0</h2>
                 </div>
             </div>
         </div>
 
-        <div class="card border-0 shadow-sm mb-5 p-4 rounded-4">
+        <div class="mb-4">
+            <div class="input-group shadow-sm rounded-3">
+                <span class="input-group-text bg-white border-0"><i class="bi bi-search"></i></span>
+                <input type="text" id="buscador" class="form-control border-0 p-3"
+                    placeholder="Buscar por serie, modelo o usuario..." onkeyup="filtrar()">
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4 p-4 rounded-4">
             <div class="row g-3">
                 <div class="col-md-3">
                     <select id="cat" class="form-select border-0 bg-light">
@@ -84,14 +89,14 @@
                 <div class="col-md-3"><input type="text" id="mod" class="form-control border-0 bg-light"
                         placeholder="Modelo"></div>
                 <div class="col-md-3"><input type="text" id="ser" class="form-control border-0 bg-light"
-                        placeholder="S/N"></div>
-                <div class="col-md-3"><button onclick="guardar()"
-                        class="btn btn-dark w-100 rounded-3">Registrar</button></div>
+                        placeholder="Nº de Serie"></div>
+                <div class="col-md-3"><button onclick="guardar()" class="btn btn-dark w-100 rounded-3">Registrar
+                        Equipo</button></div>
             </div>
         </div>
 
         <div class="table-responsive bg-white rounded-4 shadow-sm p-3">
-            <table class="table align-middle">
+            <table class="table align-middle" id="tablaActivos">
                 <thead class="text-muted small text-uppercase">
                     <tr>
                         <th>Categoría</th>
@@ -123,15 +128,23 @@
                     <tr>
                         <td class="fw-bold">${iconos[a.categoria] || '📦'} ${a.categoria}</td>
                         <td>${a.modelo}</td>
-                        <td><small class="text-muted">${a.serie}</small></td>
+                        <td><code>${a.serie}</code></td>
                         <td><span class="status-${a.estado.toLowerCase()}">${a.estado}</span></td>
                         <td>${a.usuario}</td>
                         <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="asignar(${a.id})"><i class="bi bi-person-plus"></i></button>
+                            <button class="btn btn-sm btn-outline-primary me-1" onclick="asignar(${a.id})"><i class="bi bi-person-plus"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button>
                         </td>
                     </tr>`;
                 });
+            });
+        }
+
+        function filtrar() {
+            const texto = document.getElementById('buscador').value.toLowerCase();
+            const filas = document.querySelectorAll('#lista tr');
+            filas.forEach(fila => {
+                fila.style.display = fila.innerText.toLowerCase().includes(texto) ? '' : 'none';
             });
         }
 
@@ -143,12 +156,12 @@
         }
 
         function asignar(id) {
-            const u = prompt("Usuario:");
+            const u = prompt("Ingrese el nombre del usuario:");
             if (u) fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) }).then(() => cargar());
         }
 
         function borrar(id) {
-            if (confirm("¿Borrar?")) fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => cargar());
+            if (confirm("¿Seguro que desea eliminar este equipo?")) fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => cargar());
         }
 
         cargar();

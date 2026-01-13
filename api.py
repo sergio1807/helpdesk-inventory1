@@ -122,18 +122,23 @@ def eliminar_activo(id: int):
 
 @app.get("/exportar")
 def exportar():
-    conn = conectar_db()
-    # Leemos la tabla directamente a un DataFrame de Pandas
-    df = pd.read_sql("SELECT * FROM activos", conn)
-    conn.close()
+    try:
+        conexion = conectar_db()
+        # Importante: Pandas necesita la conexión directa
+        df = pd.read_sql("SELECT * FROM activos", conexion)
+        conexion.close()
 
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Inventario')
-    output.seek(0)
-
-    return StreamingResponse(
-        output, 
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-        headers={"Content-Disposition": "attachment; filename=inventario_it.xlsx"}
-    )
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False, sheet_name='Inventario_IT')
+        
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=reporte_it.xlsx"}
+        )
+    except Exception as e:
+        # Esto te dirá el error real en los Logs de Render
+        print(f"Error en exportar: {e}")
+        return {"status": "error", "message": str(e)}
