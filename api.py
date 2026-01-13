@@ -50,11 +50,12 @@ def home():
 @app.get("/activos")
 def obtener_activos():
     conexion = conectar_db()
-    cursor = conexion.cursor()
+    # Usamos RealDictCursor para que dict(row) funcione correctamente
+    cursor = conexion.cursor(cursor_factory=RealDictCursor)
     cursor.execute("SELECT * FROM activos")
-    datos = [dict(row) for row in cursor.fetchall()]
+    filas = cursor.fetchall()
     conexion.close()
-    return datos
+    return [dict(row) for row in filas]
 
 @app.post("/crear")
 def crear_activo(datos: dict = Body(...)):
@@ -85,8 +86,9 @@ def crear_activo(datos: dict = Body(...)):
 def asignar_activo(datos: dict = Body(...)):
     conexion = conectar_db()
     cursor = conexion.cursor()
+    # CAMBIO: Usamos %s en lugar de ?
     cursor.execute(
-        "UPDATE activos SET usuario = ?, estado = 'Asignado' WHERE id = ?",
+        "UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s",
         (datos.get('usuario'), datos.get('id'))
     )
     conexion.commit()
@@ -97,7 +99,8 @@ def asignar_activo(datos: dict = Body(...)):
 def eliminar_activo(id: int):
     conexion = conectar_db()
     cursor = conexion.cursor()
-    cursor.execute("DELETE FROM activos WHERE id = ?", (id,))
+    # CAMBIO: Usamos %s en lugar de ?
+    cursor.execute("DELETE FROM activos WHERE id = %s", (id,))
     conexion.commit()
     conexion.close()
     return {"status": "success"}
