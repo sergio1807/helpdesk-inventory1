@@ -1,10 +1,13 @@
 import sqlite3
 import psycopg2
+import pandas as pd
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from psycopg2.extras import RealDictCursor
 import os
+from fastapi.responses import StreamingResponse
+from io import BytesIO
 app = FastAPI()
 
 # 1. Configuración de CORS para que el navegador no bloquee la web
