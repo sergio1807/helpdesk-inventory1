@@ -27,6 +27,26 @@
 
     <div class="container bg-white p-4 rounded shadow-sm">
         <h2 class="mb-4">🖥️ IT Asset Management</h2>
+        <div class="row mb-4 text-center">
+            <div class="col-md-4">
+                <div class="card bg-dark text-white p-3">
+                    <h5>Total Equipos</h5>
+                    <h3 id="count-total">0</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-success text-white p-3">
+                    <h5>Disponibles</h5>
+                    <h3 id="count-disponible">0</h3>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card bg-primary text-white p-3">
+                    <h5>Asignados</h5>
+                    <h3 id="count-asignado">0</h3>
+                </div>
+            </div>
+        </div>
 
         <input type="text" id="buscador" class="form-control mb-4" placeholder="Buscar por serie, modelo o usuario..."
             onkeyup="filtrar()">
@@ -68,20 +88,32 @@
                 .then(datos => {
                     const tbody = document.querySelector('#tabla tbody');
                     tbody.innerHTML = '';
+
+                    // --- Lógica de Contadores ---
+                    let total = datos.length;
+                    let disponibles = datos.filter(a => a.estado === 'Disponible').length;
+                    let asignados = datos.filter(a => a.estado === 'Asignado').length;
+
+                    // Actualizamos los números en las tarjetas de arriba
+                    document.getElementById('count-total').innerText = total;
+                    document.getElementById('count-disponible').innerText = disponibles;
+                    document.getElementById('count-asignado').innerText = asignados;
+                    // ----------------------------
+
                     datos.forEach(a => {
                         tbody.innerHTML += `
-                        <tr>
-                            <td>${a.categoria}</td>
-                            <td>${a.modelo}</td>
-                            <td><code>${a.serie}</code></td>
-                            <td class="status-${a.estado.toLowerCase()}">${a.estado}</td>
-                            <td>${a.usuario}</td>
-                            <td>
-                                <button class="btn btn-outline-primary btn-sm" onclick="asignar(${a.id})">👤 Asignar</button>
-                                <button class="btn btn-outline-danger btn-sm" onclick="borrar(${a.id})">🗑️</button>
-                            </td>
-                        </tr>
-                    `;
+                <tr>
+                    <td>${a.categoria}</td>
+                    <td>${a.modelo}</td>
+                    <td><code>${a.serie}</code></td>
+                    <td class="status-${a.estado.toLowerCase()}">${a.estado}</td>
+                    <td>${a.usuario}</td>
+                    <td>
+                        <button class="btn btn-outline-primary btn-sm" onclick="asignar(${a.id})">👤 Asignar</button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="borrar(${a.id})">🗑️</button>
+                    </td>
+                </tr>
+                `;
                     });
                 });
         }

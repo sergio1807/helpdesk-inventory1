@@ -18,7 +18,7 @@ app.add_middleware(
 # 2. Función de conexión (ESTA ES LA QUE TE FALTABA)
 def conectar_db():
     # Nos conectamos a la nube en lugar de a un archivo local
-    conexion = psycopg2.connect('postgresql://neondb_owner:npg_fbspi5NthvQ8@ep-shy-rain-aby96mld-pooler.eu-west-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require')
+    conexion = psycopg2.connect(os.getenv("DATABASE_URL"))
     return conexion
 
 # 3. Inicialización de la base de datos
@@ -82,18 +82,33 @@ def crear_activo(datos: dict = Body(...)):
     finally:
         cursor.close()
         conexion.close()
+
 @app.post("/asignar")
 def asignar_activo(datos: dict = Body(...)):
     conexion = conectar_db()
     cursor = conexion.cursor()
-    # CAMBIO: Usamos %s en lugar de ?
-    cursor.execute(
-        "UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s",
-        (datos.get('usuario'), datos.get('id'))
-    )
-    conexion.commit()
-    conexion.close()
-    return {"status": "success"}
+    try:
+        id_activo = datos.get('id')
+        nuevo_usuario = datos.get('usuario')
+
+        # 1. Actualizamos el estado del activo
+        cursor.execute(
+            "UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s",
+            (nuevo_usuario, id_activo)
+        )
+        
+        # 2. Guardamos el movimiento en el historial
+        cursor.execute(
+            "INSERT INTO historial (activo_id, usuario, accion) VALUES (%s, %s, %s)",
+            (id_activo, nuevo_usuario, 'Asignación')
+        )
+        
+        conexion.commit()
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        conexion.close()
 
 @app.delete("/eliminar/{id}")
 def eliminar_activo(id: int):
