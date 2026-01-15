@@ -108,18 +108,30 @@
         /* ... tus estilos anteriores ... */
 
         #btn-abrir {
-            z-index: 1500;
-            display: block;
-            /* Asegura que esté por encima del contenido */
-            border-radius: 10px;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 2000;
+            border-radius: 8px;
+            /* Transición suave para que no desaparezca de golpe */
+            transition: all 0.3s ease;
+            opacity: 1;
+            pointer-events: auto;
         }
 
+        #btn-abrir.oculto {
+            opacity: 0;
+            pointer-events: none;
+            /* Evita clicks fantasma cuando no se ve */
+            transform: translateX(-20px);
+            /* Efecto visual de salida */
+        }
+
+        /* En PC, forzamos que nunca se vea */
         @media (min-width: 769px) {
             #btn-abrir {
                 display: none !important;
             }
-
-            /* En PC nunca se ve */
         }
 
         @media (max-width: 768px) {
@@ -137,8 +149,7 @@
 </head>
 
 <body>
-    <button id="btn-abrir" class="btn btn-dark d-md-none position-fixed top-0 start-0 m-3 z-index-2000"
-        onclick="toggleMenu()">
+    <button id="btn-abrir" class="btn btn-dark d-md-none" onclick="toggleMenu()">
         <i class="bi bi-list fs-3"></i>
     </button>
     <div id="sidebar">
@@ -335,18 +346,17 @@
             const sidebar = document.getElementById('sidebar');
             const btnAbrir = document.getElementById('btn-abrir');
 
+            // 1. Abrimos/Cerramos la sidebar
             sidebar.classList.toggle('active');
 
-            // Control de visibilidad del botón disparador
+            // 2. Si la sidebar acaba de abrirse (tiene active), ocultamos el botón
             if (sidebar.classList.contains('active')) {
-                btnAbrir.style.opacity = "0";
-                btnAbrir.style.pointerEvents = "none";
+                btnAbrir.classList.add('oculto');
             } else {
-                btnAbrir.style.opacity = "1";
-                btnAbrir.style.pointerEvents = "auto";
+                // Si se ha cerrado, mostramos el botón
+                btnAbrir.classList.remove('oculto');
             }
         }
-
         function notificar(msg, color = 'bg-dark') {
             const t = document.getElementById('liveToast');
             document.getElementById('toast-mensaje').innerText = msg;
@@ -431,14 +441,21 @@
         }
 
         function verVentana(id, el) {
+            // Lógica de cambio de pestañas
             document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
             document.getElementById(id).classList.add('activa');
+
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             el.classList.add('active');
 
-            // Si estamos en móvil, cerramos el sidebar tras clickar
+            // LÓGICA MÓVIL CRÍTICA:
+            // Si estamos en móvil, cerramos el menú Y aseguramos que el botón vuelva
             if (window.innerWidth <= 768) {
-                toggleSidebar();
+                const sidebar = document.getElementById('sidebar');
+                const btnAbrir = document.getElementById('btn-abrir');
+
+                sidebar.classList.remove('active'); // Cierra menú
+                btnAbrir.classList.remove('oculto'); // ¡IMPORTANTE! Muestra botón
             }
         }
 
