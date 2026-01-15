@@ -104,11 +104,44 @@
         .vista.activa {
             display: block;
         }
+
+        <style>
+        /* ... tus estilos anteriores ... */
+
+        #btn-abrir {
+            z-index: 1500;
+            /* Asegura que esté por encima del contenido */
+            border-radius: 10px;
+        }
+
+        @media (min-width: 769px) {
+            #btn-abrir {
+                display: none !important;
+            }
+
+            /* En PC nunca se ve */
+        }
+
+        @media (max-width: 768px) {
+            #sidebar {
+                left: -250px;
+                z-index: 2000;
+                /* La sidebar debe tapar el botón al abrirse */
+            }
+
+            #sidebar.active {
+                left: 0;
+            }
+        }
+    </style>
     </style>
 </head>
 
 <body>
-
+    <button id="btn-abrir" class="btn btn-dark d-md-none position-fixed top-0 start-0 m-3 z-index-2000"
+        onclick="toggleMenu()">
+        <i class="bi bi-list fs-3"></i>
+    </button>
     <div id="sidebar">
         <button class="btn btn-dark btn-movil" onclick="toggleSidebar()">
             <i class="bi bi-list fs-3"></i>
