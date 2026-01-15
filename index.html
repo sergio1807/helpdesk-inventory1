@@ -13,9 +13,10 @@
 
         body {
             background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', sans-serif;
         }
 
+        /* SIDEBAR RESPONSIVO */
         #sidebar {
             width: var(--sidebar-width);
             height: 100vh;
@@ -28,8 +29,51 @@
 
         #content {
             margin-left: var(--sidebar-width);
-            padding: 30px;
-            min-height: 100vh;
+            padding: 20px;
+            transition: 0.3s;
+        }
+
+        /* Ajustes para Móvil (Pantallas menores a 768px) */
+        @media (max-width: 768px) {
+            #sidebar {
+                margin-left: calc(var(--sidebar-width) * -1);
+            }
+
+            #sidebar.active {
+                margin-left: 0;
+            }
+
+            #content {
+                margin-left: 0;
+                padding: 10px;
+            }
+
+            #content.active {
+                margin-left: 0;
+                filter: blur(2px);
+            }
+
+            /* Botón de menú flotante para móvil */
+            .btn-movil {
+                display: block !important;
+            }
+
+            /* Tablas con scroll horizontal para que no se rompan */
+            .table-responsive {
+                font-size: 0.85rem;
+            }
+        }
+
+        .btn-movil {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1100;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
 
         .nav-link {
@@ -37,10 +81,8 @@
             cursor: pointer;
             border-radius: 8px;
             margin: 5px 15px;
-            transition: 0.2s;
         }
 
-        .nav-link:hover,
         .nav-link.active {
             background: rgba(255, 255, 255, 0.1);
             color: white;
@@ -58,12 +100,10 @@
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
             }
 
             to {
                 opacity: 1;
-                transform: translateY(0);
             }
         }
 
@@ -71,21 +111,15 @@
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .status-disponible {
-            color: #198754;
-            font-weight: bold;
-        }
-
-        .status-asignado {
-            color: #0d6efd;
-            font-weight: bold;
+            margin-bottom: 15px;
         }
     </style>
 </head>
 
 <body>
+    <button class="btn btn-dark btn-movil" onclick="toggleSidebar()">
+        <i class="bi bi-list fs-3"></i>
+    </button>
 
     <div id="sidebar">
         <div class="p-4">
@@ -229,6 +263,22 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalHistorial" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 bg-light rounded-top-4">
+                    <h5 class="modal-title fw-bold" id="tituloHistorial">Historial del Equipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4" id="cuerpoHistorial" style="max-height: 400px; overflow-y: auto;">
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-dark rounded-3 px-4" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const iconos = { Laptop: '💻', Monitor: '🖥️', Periférico: '🖱️' };
@@ -238,6 +288,13 @@
             document.getElementById(id).classList.add('activa');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             el.classList.add('active');
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const content = document.getElementById('content');
+            sidebar.classList.toggle('active');
+            content.classList.toggle('active');
         }
 
         function notificar(msg, color = 'bg-dark') {
@@ -291,11 +348,29 @@
 
         function verHistorial(id, mod) {
             fetch(`/historial/${id}`).then(r => r.json()).then(data => {
-                if (data.length === 0) notificar("Sin historial", "bg-secondary");
-                else {
-                    let h = `HISTORIAL: ${mod}\n` + "=".repeat(20) + "\n";
-                    data.forEach(x => h += `• ${new Date(x.fecha).toLocaleString()}: ${x.detalle}\n`);
-                    alert(h);
+                if (data.length === 0) {
+                    notificar("ℹ️ Este equipo aún no tiene movimientos", "bg-secondary");
+                } else {
+                    // Actualizar el título del Modal
+                    document.getElementById('tituloHistorial').innerText = `Historial: ${mod}`;
+
+                    // Construir la lista de movimientos con estilo
+                    let html = '<ul class="list-group list-group-flush">';
+                    data.forEach(x => {
+                        const fecha = new Date(x.fecha).toLocaleString();
+                        html += `
+                    <li class="list-group-item border-0 border-bottom py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-dark">${x.detalle}</span>
+                            <small class="text-muted"><i class="bi bi-clock me-1"></i>${fecha}</small>
+                        </div>
+                    </li>`;
+                    });
+                    html += '</ul>';
+
+                    // Inyectar el HTML en el modal y mostrarlo
+                    document.getElementById('cuerpoHistorial').innerHTML = html;
+                    new bootstrap.Modal(document.getElementById('modalHistorial')).show();
                 }
             });
         }
@@ -303,6 +378,18 @@
         function filtrar() {
             const val = document.getElementById('buscador').value.toLowerCase();
             document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(val) ? '' : 'none');
+        }
+
+        function verVentana(id, el) {
+            document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+            document.getElementById(id).classList.add('activa');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            el.classList.add('active');
+
+            // Si estamos en móvil, cerramos el sidebar tras clickar
+            if (window.innerWidth <= 768) {
+                toggleSidebar();
+            }
         }
 
         cargar();
