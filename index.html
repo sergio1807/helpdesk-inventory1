@@ -271,7 +271,7 @@
                 else {
                     let t = `HISTORIAL: ${modelo}\n\n`;
                     datos.forEach(h => t += `• ${new Date(h.fecha).toLocaleString()}: ${h.detalle}\n`);
-                    alert(t);
+                    mostrarNotificacion(t);
                 }
             });
         }
