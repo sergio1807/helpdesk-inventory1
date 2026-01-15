@@ -533,41 +533,71 @@
 
         function cargar() {
             fetch('/activos').then(r => r.json()).then(data => {
+                // 1. Actualizar contadores y gráficos (Tu código normal)
                 document.getElementById('total').innerText = data.length;
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
                 actualizarGraficos(data);
 
+                // 2. Renderizar tablas (Tu código normal)
                 const tStock = document.getElementById('lista-stock');
                 const tAsignar = document.getElementById('lista-asignar');
                 tStock.innerHTML = ''; tAsignar.innerHTML = '';
 
                 data.forEach(a => {
+                    // ... (Tu código de generación de filas sigue igual) ...
                     tStock.innerHTML += `<tr>
-                        <td>${iconos[a.categoria] || '📦'} ${a.categoria}</td>
-                        <td>${a.modelo}</td>
-                        <td><code>${a.serie}</code></td>
-                        <td><span class="badge ${a.estado === 'Disponible' ? 'bg-success' : 'bg-info'}">${a.estado}</span></td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-warning me-1" onclick="prepararEditar(${a.id}, '${a.categoria}', '${a.modelo}', '${a.serie}')"><i class="bi bi-pencil"></i></button>
-                            <button class="btn btn-sm btn-outline-danger" onclick="prepararBorrar(${a.id})"><i class="bi bi-trash"></i></button>
-                        </td>
-                    </tr>`;
+                <td>${iconos[a.categoria] || '📦'} ${a.categoria}</td>
+                <td>${a.modelo}</td>
+                <td><code>${a.serie}</code></td>
+                <td><span class="badge ${a.estado === 'Disponible' ? 'bg-success' : 'bg-info'}">${a.estado}</span></td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-warning me-1" onclick="prepararEditar(${a.id}, '${a.categoria}', '${a.modelo}', '${a.serie}')"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="prepararBorrar(${a.id})"><i class="bi bi-trash"></i></button>
+                </td>
+            </tr>`;
                     tAsignar.innerHTML += `<tr>
-                        <td>${a.modelo}</td>
-                        <td><code>${a.serie}</code></td>
-                        <td><span class="badge bg-light text-dark">${a.usuario}</span></td>
-                        <td class="text-end">
-                            <button class="btn btn-sm btn-primary rounded-pill px-3 me-1"
-                                onclick="prepararAsignar(${a.id}, '${a.modelo}', '${a.serie}')"> Asignar
-                            </button>
-                            <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button>
-                        </td>
-                    </tr>`;
+                <td>${a.modelo}</td>
+                <td><code>${a.serie}</code></td>
+                <td><span class="badge bg-light text-dark">${a.usuario}</span></td>
+                <td class="text-end">
+                    <button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id})">Asignar</button>
+                    <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button>
+                </td>
+            </tr>`;
                 });
+
+                // --- 3. LA MAGIA DEL QR (NUEVO) ---
+                // Leemos si hay un parámetro 'buscar' en la URL
+                const params = new URLSearchParams(window.location.search);
+                const serieQR = params.get('buscar');
+
+                if (serieQR) {
+                    // Buscamos el equipo con esa serie en los datos que acabamos de descargar
+                    const equipoEncontrado = data.find(d => d.serie === serieQR);
+
+                    if (equipoEncontrado) {
+                        // Si existe, abrimos la pestaña de Inventario
+                        verVentana('v-stock', document.querySelectorAll('.nav-link')[1]);
+
+                        // Y abrimos automáticamente su ficha de edición/visualización
+                        prepararEditar(
+                            equipoEncontrado.id,
+                            equipoEncontrado.categoria,
+                            equipoEncontrado.modelo,
+                            equipoEncontrado.serie
+                        );
+
+                        notificar("🔎 Equipo encontrado por QR", "bg-primary");
+
+                        // Limpiamos la URL para que si recargas no se vuelva a abrir
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                    } else {
+                        notificar("⚠️ El equipo del QR no existe en la base de datos", "bg-warning");
+                    }
+                }
             });
         }
-
         // --- ACCIONES CON QR ---
         function guardar() {
             const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
