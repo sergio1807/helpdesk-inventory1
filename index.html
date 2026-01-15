@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>IT Admin Panel</title>
+    <title>IT Admin Panel - Master</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
@@ -13,6 +13,7 @@
 
         body {
             background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
         #sidebar {
@@ -22,6 +23,7 @@
             background: #212529;
             color: white;
             transition: 0.3s;
+            z-index: 1000;
         }
 
         #content {
@@ -35,6 +37,7 @@
             cursor: pointer;
             border-radius: 8px;
             margin: 5px 15px;
+            transition: 0.2s;
         }
 
         .nav-link:hover,
@@ -45,10 +48,23 @@
 
         .vista {
             display: none;
+            animation: fadeIn 0.3s;
         }
 
         .vista.activa {
             display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .card-custom {
@@ -70,6 +86,7 @@
 </head>
 
 <body>
+
     <div id="sidebar">
         <div class="p-4">
             <h4 class="fw-bold"><i class="bi bi-shield-lock-fill"></i> IT MASTER</h4>
@@ -80,7 +97,7 @@
             <a class="nav-link" onclick="verVentana('v-stock', this)"><i class="bi bi-box-seam me-2"></i> Inventario</a>
             <a class="nav-link" onclick="verVentana('v-operaciones', this)"><i class="bi bi-person-gear me-2"></i>
                 Asignaciones</a>
-            <hr class="mx-3">
+            <hr class="mx-3 opacity-25">
             <a class="nav-link text-success" href="/exportar"><i class="bi bi-file-earmark-excel me-2"></i> Exportar
                 Datos</a>
         </nav>
@@ -116,18 +133,17 @@
             <div class="card card-custom p-4 mb-4">
                 <h5 class="mb-3">Registrar Nuevo Equipo</h5>
                 <div class="row g-3">
-                    <div class="col-md-3">
-                        <select id="cat" class="form-select border-0 bg-light">
+                    <div class="col-md-3"><select id="cat" class="form-select border-0 bg-light p-3 rounded-3">
                             <option value="Laptop">Laptop 💻</option>
                             <option value="Monitor">Monitor 🖥️</option>
                             <option value="Periférico">Periférico 🖱️</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3"><input type="text" id="mod" class="form-control border-0 bg-light"
-                            placeholder="Modelo"></div>
-                    <div class="col-md-3"><input type="text" id="ser" class="form-control border-0 bg-light"
-                            placeholder="Serie"></div>
-                    <div class="col-md-3"><button onclick="guardar()" class="btn btn-dark w-100">Guardar</button></div>
+                        </select></div>
+                    <div class="col-md-3"><input type="text" id="mod"
+                            class="form-control border-0 bg-light p-3 rounded-3" placeholder="Modelo"></div>
+                    <div class="col-md-3"><input type="text" id="ser"
+                            class="form-control border-0 bg-light p-3 rounded-3" placeholder="Número de Serie"></div>
+                    <div class="col-md-3"><button onclick="guardar()"
+                            class="btn btn-dark w-100 p-3 rounded-3 fw-bold">Añadir al Stock</button></div>
                 </div>
             </div>
             <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
@@ -138,7 +154,7 @@
                             <th>Modelo</th>
                             <th>S/N</th>
                             <th>Estado</th>
-                            <th>Acciones</th>
+                            <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="lista-stock"></tbody>
@@ -148,10 +164,8 @@
 
         <div id="v-operaciones" class="vista">
             <h2 class="mb-4">Panel de Operaciones</h2>
-            <div class="mb-3">
-                <input type="text" id="buscador" class="form-control p-3 border-0 shadow-sm"
-                    placeholder="Buscar equipo..." onkeyup="filtrar()">
-            </div>
+            <div class="mb-3"><input type="text" id="buscador" class="form-control p-3 border-0 shadow-sm rounded-4"
+                    placeholder="Buscar por serie, modelo o usuario..." onkeyup="filtrar()"></div>
             <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
                 <table class="table align-middle">
                     <thead>
@@ -159,7 +173,7 @@
                             <th>Equipo</th>
                             <th>Serie</th>
                             <th>Usuario</th>
-                            <th>Acción</th>
+                            <th class="text-end">Acción</th>
                         </tr>
                     </thead>
                     <tbody id="lista-asignar"></tbody>
@@ -168,34 +182,22 @@
         </div>
     </div>
 
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
-            aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body" id="toast-mensaje"></div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                    aria-label="Close"></button>
-            </div>
-        </div>
-    </div>
-
     <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Asignar Equipo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold">Asignar Usuario</h5><button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="id-asignar-temp">
-                    <label class="form-label text-muted small">Nombre del Usuario</label>
-                    <input type="text" id="nombre-usuario-modal" class="form-control border-0 bg-light p-3"
-                        placeholder="Ej: Juan Pérez">
+                    <input type="text" id="nombre-usuario-modal" class="form-control border-0 bg-light p-3 rounded-3"
+                        placeholder="Nombre completo del usuario">
                 </div>
                 <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" onclick="confirmarAsignacion()"
-                        class="btn btn-primary rounded-3 px-4">Confirmar</button>
+                        class="btn btn-primary px-4 fw-bold">Confirmar</button>
                 </div>
             </div>
         </div>
@@ -203,150 +205,104 @@
 
     <div class="modal fade" id="modalBorrar" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content border-0 shadow rounded-4">
-                <div class="modal-body text-center p-4">
-                    <input type="hidden" id="id-borrar-temp">
-                    <i class="bi bi-exclamation-triangle text-danger display-4"></i>
-                    <h5 class="mt-3 fw-bold">¿Eliminar equipo?</h5>
-                    <p class="text-muted small">Esta acción no se puede deshacer.</p>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">No</button>
-                        <button type="button" onclick="confirmarBorrado()" class="btn btn-danger w-100">Sí,
-                            borrar</button>
-                    </div>
+            <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4">
+                <input type="hidden" id="id-borrar-temp">
+                <i class="bi bi-exclamation-octagon text-danger display-4 mb-3"></i>
+                <h5 class="fw-bold">¿Eliminar equipo?</h5>
+                <p class="text-muted small mb-4">Esta acción no se puede deshacer.</p>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">No</button>
+                    <button type="button" onclick="confirmarBorrado()" class="btn btn-danger w-100 fw-bold">Sí,
+                        eliminar</button>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white border-0 rounded-3 shadow" role="alert"
+            aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-mensaje"></div><button type="button"
+                    class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const iconos = { Laptop: '💻', Monitor: '🖥️', Servidor: '🗄️', Periférico: '🖱️' };
+        const iconos = { Laptop: '💻', Monitor: '🖥️', Periférico: '🖱️' };
 
-        function verVentana(idVentana, elemento) {
+        function verVentana(id, el) {
             document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
-            document.getElementById(idVentana).classList.add('activa');
+            document.getElementById(id).classList.add('activa');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            elemento.classList.add('active');
+            el.classList.add('active');
         }
 
-        function mostrarNotificacion(mensaje, color = 'bg-dark') {
-            const toastEl = document.getElementById('liveToast');
-            const mensajeEl = document.getElementById('toast-mensaje');
-            toastEl.className = `toast align-items-center text-white ${color} border-0`;
-            mensajeEl.innerText = mensaje;
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
+        function notificar(msg, color = 'bg-dark') {
+            const t = document.getElementById('liveToast');
+            document.getElementById('toast-mensaje').innerText = msg;
+            t.className = `toast align-items-center text-white border-0 rounded-3 shadow ${color}`;
+            new bootstrap.Toast(t).show();
         }
 
         function cargar() {
             fetch('/activos').then(r => r.json()).then(data => {
-                // Actualizar Dashboard
                 document.getElementById('total').innerText = data.length;
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
 
-                const tbodyStock = document.getElementById('lista-stock');
-                const tbodyAsignar = document.getElementById('lista-asignar');
-                tbodyStock.innerHTML = ''; tbodyAsignar.innerHTML = '';
+                const tStock = document.getElementById('lista-stock');
+                const tAsignar = document.getElementById('lista-asignar');
+                tStock.innerHTML = ''; tAsignar.innerHTML = '';
 
                 data.forEach(a => {
-                    tbodyStock.innerHTML += `<tr>
-                        <td class="fw-bold">${iconos[a.categoria] || '📦'} ${a.categoria}</td>
-                        <td>${a.modelo}</td>
-                        <td><code>${a.serie}</code></td>
-                        <td><span class="status-${a.estado.toLowerCase()}">${a.estado}</span></td>
-                        <td><button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button></td>
-                    </tr>`;
-
-                    tbodyAsignar.innerHTML += `<tr>
-                        <td>${a.modelo}</td>
-                        <td>${a.serie}</td>
-                        <td><span class="badge bg-light text-dark">${a.usuario || 'N/A'}</span></td>
-                        <td>
-                            <button class="btn btn-sm btn-primary me-1" onclick="asignar(${a.id})">Asignar</button>
-                            <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button>
-                        </td>
-                    </tr>`;
+                    tStock.innerHTML += `<tr><td>${iconos[a.categoria] || '📦'} ${a.categoria}</td><td>${a.modelo}</td><td><code>${a.serie}</code></td><td><span class="status-${a.estado.toLowerCase()}">${a.estado}</span></td><td class="text-end"><button class="btn btn-sm btn-outline-danger border-0" onclick="prepararBorrar(${a.id})"><i class="bi bi-trash"></i></button></td></tr>`;
+                    tAsignar.innerHTML += `<tr><td>${a.modelo}</td><td><code>${a.serie}</code></td><td><span class="badge bg-light text-dark">${a.usuario || 'N/A'}</span></td><td class="text-end"><button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id})">Asignar</button><button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button></td></tr>`;
                 });
             });
         }
 
         function guardar() {
             const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
-            if (!d.modelo || !d.serie) {
-                mostrarNotificacion("⚠️ Completa los campos", "bg-warning");
-                return;
-            }
+            if (!d.modelo || !d.serie) return notificar("⚠️ Completa los campos", "bg-warning");
             fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-                .then(res => res.json()).then(data => {
-                    if (data.status === "error") mostrarNotificacion(data.message, "bg-danger");
-                    else {
-                        mostrarNotificacion("✅ Equipo registrado", "bg-success");
-                        document.getElementById('mod').value = ''; document.getElementById('ser').value = '';
-                        cargar();
-                    }
+                .then(res => res.json()).then(res => {
+                    if (res.status === "error") notificar(res.message, "bg-danger");
+                    else { notificar("✅ Registrado", "bg-success"); document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar(); }
                 });
         }
 
-        function asignar(id) {
-            document.getElementById('id-asignar-temp').value = id;
-            document.getElementById('nombre-usuario-modal').value = '';
-            const myModal = new bootstrap.Modal(document.getElementById('modalAsignar'));
-            myModal.show();
-        }
-
+        function prepararAsignar(id) { document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
         function confirmarAsignacion() {
             const id = document.getElementById('id-asignar-temp').value;
             const u = document.getElementById('nombre-usuario-modal').value;
-
-            if (!u) {
-                mostrarNotificacion("⚠️ Escribe un nombre", "bg-warning");
-                return;
-            }
-
-            fetch('/asignar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id: id, usuario: u })
-            }).then(res => res.json()).then(data => {
-                if (data.status === "success") {
-                    bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
-                    mostrarNotificacion("👤 Usuario asignado", "bg-primary");
-                    cargar();
-                }
-            });
+            if (!u) return notificar("⚠️ Escribe un nombre", "bg-warning");
+            fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, usuario: u }) })
+                .then(() => { bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("👤 Usuario asignado", "bg-primary"); cargar(); });
         }
 
-        function verHistorial(id, modelo) {
-            fetch(`/historial/${id}`).then(res => res.json()).then(datos => {
-                if (datos.length === 0) mostrarNotificacion("Sin historial", "bg-secondary");
-                else {
-                    let t = `HISTORIAL: ${modelo}\n\n`;
-                    datos.forEach(h => t += `• ${new Date(h.fecha).toLocaleString()}: ${h.detalle}\n`);
-                    mostrarNotificacion(t);
-                }
-            });
-        }
-
-        function borrar(id) {
-            document.getElementById('id-borrar-temp').value = id;
-            const myModal = new bootstrap.Modal(document.getElementById('modalBorrar'));
-            myModal.show();
-        }
-
+        function prepararBorrar(id) { document.getElementById('id-borrar-temp').value = id; new bootstrap.Modal(document.getElementById('modalBorrar')).show(); }
         function confirmarBorrado() {
-            const id = document.getElementById('id-borrar-temp').value;
-            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => {
-                bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide();
-                mostrarNotificacion("🗑️ Equipo eliminado", "bg-secondary");
-                cargar();
+            fetch(`/eliminar/${document.getElementById('id-borrar-temp').value}`, { method: 'DELETE' })
+                .then(() => { bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("🗑️ Eliminado", "bg-dark"); cargar(); });
+        }
+
+        function verHistorial(id, mod) {
+            fetch(`/historial/${id}`).then(r => r.json()).then(data => {
+                if (data.length === 0) notificar("Sin historial", "bg-secondary");
+                else {
+                    let h = `HISTORIAL: ${mod}\n` + "=".repeat(20) + "\n";
+                    data.forEach(x => h += `• ${new Date(x.fecha).toLocaleString()}: ${x.detalle}\n`);
+                    alert(h);
+                }
             });
         }
 
         function filtrar() {
-            const texto = document.getElementById('buscador').value.toLowerCase();
-            document.querySelectorAll('#lista-asignar tr').forEach(f => f.style.display = f.innerText.toLowerCase().includes(texto) ? '' : 'none');
+            const val = document.getElementById('buscador').value.toLowerCase();
+            document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(val) ? '' : 'none');
         }
 
         cargar();
