@@ -135,8 +135,8 @@
                             <button class="btn btn-sm btn-outline-primary me-1" onclick="asignar(${a.id})"><i class="bi bi-person-plus"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button>
                             <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial(${a.id}, '${a.modelo}')">
-                                <i class="bi bi-clock-history"></i>
-                            </button>
+    <i class="bi bi-clock-history"></i>
+</button>
                         </td>
                     </tr>`;
                 });
@@ -157,14 +157,16 @@
                 .then(datos => {
                     if (datos.length === 0) {
                         alert(`El equipo ${modelo} no tiene movimientos registrados aún.`);
-                        return;
+                    } else {
+                        let mensaje = `📜 HISTORIAL DE: ${modelo.toUpperCase()}\n\n`;
+                        datos.forEach(h => {
+                            const fecha = new Date(h.fecha).toLocaleString();
+                            mensaje += `📍 ${fecha} -> ${h.detalle}\n`;
+                        });
+                        alert(mensaje);
                     }
-                    let mensaje = `Historial de ${modelo}:\n\n`;
-                    datos.forEach(h => {
-                        mensaje += `- ${new Date(h.fecha).toLocaleString()}: ${h.detalle}\n`;
-                    });
-                    alert(mensaje);
-                });
+                })
+                .catch(err => console.error("Error al cargar historial:", err));
         }
 
         function guardar() {

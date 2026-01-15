@@ -138,8 +138,8 @@ def exportar():
 @app.get("/historial/{activo_id}")
 def obtener_historial(activo_id: int):
     conexion = conectar_db()
+    # Usamos RealDictCursor para que JavaScript entienda los datos
     cursor = conexion.cursor(cursor_factory=RealDictCursor)
-    # Buscamos todos los movimientos de este equipo ordenados por fecha
     cursor.execute("SELECT detalle, fecha FROM historial WHERE activo_id = %s ORDER BY fecha DESC", (activo_id,))
     historial = cursor.fetchall()
     conexion.close()
