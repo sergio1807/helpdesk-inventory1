@@ -168,10 +168,21 @@
         </div>
     </div>
 
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast align-items-center text-white border-0" role="alert" aria-live="assertive"
+            aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body" id="toast-mensaje"></div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                    aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const iconos = { Laptop: '💻', Monitor: '🖥️', Servidor: '🗄️', Periférico: '🖱️' };
 
-        // 1. FUNCIÓN PARA CAMBIAR VENTANAS
         function verVentana(idVentana, elemento) {
             document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
             document.getElementById(idVentana).classList.add('activa');
@@ -179,50 +190,64 @@
             elemento.classList.add('active');
         }
 
-        // 2. CARGAR DATOS EN AMBAS TABLAS
+        function mostrarNotificacion(mensaje, color = 'bg-dark') {
+            const toastEl = document.getElementById('liveToast');
+            const mensajeEl = document.getElementById('toast-mensaje');
+            toastEl.className = `toast align-items-center text-white ${color} border-0`;
+            mensajeEl.innerText = mensaje;
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
         function cargar() {
             fetch('/activos').then(r => r.json()).then(data => {
-                // 1. Actualizar los contadores superiores
                 document.getElementById('total').innerText = data.length;
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
 
-                // 2. Obtener las dos tablas nuevas
                 const tbodyStock = document.getElementById('lista-stock');
                 const tbodyAsignar = document.getElementById('lista-asignar');
-
-                // Limpiamos ambas para que no se dupliquen los datos
-                tbodyStock.innerHTML = '';
-                tbodyAsignar.innerHTML = '';
+                tbodyStock.innerHTML = ''; tbodyAsignar.innerHTML = '';
 
                 data.forEach(a => {
-                    // Llenamos la tabla de la pestaña "Inventario"
-                    tbodyStock.innerHTML += `
-                <tr>
-                    <td class="fw-bold">${iconos[a.categoria] || '📦'} ${a.categoria}</td>
-                    <td>${a.modelo}</td>
-                    <td><code>${a.serie}</code></td>
-                    <td><button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button></td>
-                </tr>`;
+                    tbodyStock.innerHTML += `<tr>
+                        <td class="fw-bold">${iconos[a.categoria] || '📦'} ${a.categoria}</td>
+                        <td>${a.modelo}</td>
+                        <td><code>${a.serie}</code></td>
+                        <td><span class="status-${a.estado.toLowerCase()}">${a.estado}</span></td>
+                        <td><button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button></td>
+                    </tr>`;
 
-                    // Llenamos la tabla de la pestaña "Asignaciones"
-                    tbodyAsignar.innerHTML += `
-                <tr>
-                    <td>${a.modelo}</td>
-                    <td>${a.serie}</td>
-                    <td><span class="badge bg-light text-dark">${a.usuario}</span></td>
-                    <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="asignar(${a.id})">Asignar</button>
-                        <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial(${a.id}, '${a.modelo}')">
-                            <i class="bi bi-clock-history"></i>
-                        </button>
-                    </td>
-                </tr>`;
+                    tbodyAsignar.innerHTML += `<tr>
+                        <td>${a.modelo}</td>
+                        <td>${a.serie}</td>
+                        <td><span class="badge bg-light text-dark">${a.usuario || 'N/A'}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary me-1" onclick="asignar(${a.id})">Asignar</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button>
+                        </td>
+                    </tr>`;
                 });
             });
         }
 
-        // 3. ASIGNAR USUARIO
+        function guardar() {
+            const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
+            if (!d.modelo || !d.serie) {
+                mostrarNotificacion("Completa todos los campos", "bg-warning");
+                return;
+            }
+            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
+                .then(res => res.json()).then(data => {
+                    if (data.status === "error") mostrarNotificacion(data.message, "bg-danger");
+                    else {
+                        mostrarNotificacion("✅ Equipo registrado", "bg-success");
+                        document.getElementById('mod').value = ''; document.getElementById('ser').value = '';
+                        cargar();
+                    }
+                });
+        }
+
         function asignar(id) {
             const u = prompt("Ingrese el nombre del nuevo usuario:");
             if (u) {
@@ -230,35 +255,33 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ id: id, usuario: u })
-                }).then(() => cargar());
+                }).then(res => res.json()).then(data => {
+                    if (data.status === "success") {
+                        mostrarNotificacion("👤 Usuario asignado", "bg-primary");
+                        cargar();
+                    }
+                });
             }
         }
 
-        // 4. VER HISTORIAL
         function verHistorial(id, modelo) {
             fetch(`/historial/${id}`).then(res => res.json()).then(datos => {
-                if (datos.length === 0) {
-                    alert("Sin movimientos.");
-                } else {
+                if (datos.length === 0) mostrarNotificacion("Sin historial", "bg-secondary");
+                else {
                     let t = `HISTORIAL: ${modelo}\n\n`;
                     datos.forEach(h => t += `• ${new Date(h.fecha).toLocaleString()}: ${h.detalle}\n`);
-                    alert(t);
+                    alert(t); // El historial es mejor en alert o modal por la longitud
                 }
             });
         }
 
-        // 5. GUARDAR Y BORRAR
-        function guardar() {
-            const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
-            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-                .then(res => res.json()).then(data => {
-                    if (data.status === "error") alert(data.message);
-                    else { document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar(); }
-                });
-        }
-
         function borrar(id) {
-            if (confirm("¿Eliminar equipo?")) fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => cargar());
+            if (confirm("¿Eliminar equipo?")) {
+                fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => {
+                    mostrarNotificacion("🗑️ Equipo eliminado", "bg-secondary");
+                    cargar();
+                });
+            }
         }
 
         function filtrar() {
@@ -266,7 +289,7 @@
             document.querySelectorAll('#lista-asignar tr').forEach(f => f.style.display = f.innerText.toLowerCase().includes(texto) ? '' : 'none');
         }
 
-        cargar(); // Carga inicial
+        cargar();
     </script>
 </body>
 
