@@ -134,6 +134,9 @@
                         <td>
                             <button class="btn btn-sm btn-outline-primary me-1" onclick="asignar(${a.id})"><i class="bi bi-person-plus"></i></button>
                             <button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial(${a.id}, '${a.modelo}')">
+                                <i class="bi bi-clock-history"></i>
+                            </button>
                         </td>
                     </tr>`;
                 });
@@ -146,6 +149,22 @@
             filas.forEach(fila => {
                 fila.style.display = fila.innerText.toLowerCase().includes(texto) ? '' : 'none';
             });
+        }
+
+        function verHistorial(id, modelo) {
+            fetch(`/historial/${id}`)
+                .then(res => res.json())
+                .then(datos => {
+                    if (datos.length === 0) {
+                        alert(`El equipo ${modelo} no tiene movimientos registrados aún.`);
+                        return;
+                    }
+                    let mensaje = `Historial de ${modelo}:\n\n`;
+                    datos.forEach(h => {
+                        mensaje += `- ${new Date(h.fecha).toLocaleString()}: ${h.detalle}\n`;
+                    });
+                    alert(mensaje);
+                });
         }
 
         function guardar() {

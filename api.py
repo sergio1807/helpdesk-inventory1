@@ -135,6 +135,16 @@ def exportar():
         print(f"Error en exportar: {e}")
         return {"status": "error", "message": str(e)}
 
+@app.get("/historial/{activo_id}")
+def obtener_historial(activo_id: int):
+    conexion = conectar_db()
+    cursor = conexion.cursor(cursor_factory=RealDictCursor)
+    # Buscamos todos los movimientos de este equipo ordenados por fecha
+    cursor.execute("SELECT detalle, fecha FROM historial WHERE activo_id = %s ORDER BY fecha DESC", (activo_id,))
+    historial = cursor.fetchall()
+    conexion.close()
+    return historial
+
 if __name__ == "__main__":
     import uvicorn
     # Render nos da el puerto en la variable de entorno PORT
