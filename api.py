@@ -134,3 +134,10 @@ def exportar():
         # Esto te dirá el error real en los Logs de Render
         print(f"Error en exportar: {e}")
         return {"status": "error", "message": str(e)}
+
+if __name__ == "__main__":
+    import uvicorn
+    # Render nos da el puerto en la variable de entorno PORT
+    port = int(os.environ.get("PORT", 8000))
+    # Forzamos a uvicorn a escuchar en 0.0.0.0 y en el puerto de Render
+    uvicorn.run(app, host="0.0.0.0", port=port)
