@@ -19,8 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- MODELOS DE DATOS (Pydantic) ---
-# Esto valida que el Frontend no envíe basura
+# --- MODELOS DE DATOS (Validación) ---
 class ActivoSchema(BaseModel):
     categoria: str
     modelo: str
@@ -30,7 +29,7 @@ class AsignacionSchema(BaseModel):
     id: int
     usuario: str
 
-# --- BASE DE DATOS (Connection Pool) ---
+# --- BASE DE DATOS (Pool de Conexiones) ---
 try:
     db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, dsn=os.getenv("DATABASE_URL"))
     print("✅ BD Conectada")
@@ -39,7 +38,7 @@ except Exception as e:
 
 def get_conn():
     if db_pool: return db_pool.getconn()
-    raise HTTPException(status_code=500, detail="Error de conexión")
+    raise HTTPException(status_code=500, detail="Error de conexión a BD")
 
 def release_conn(conn):
     if db_pool and conn: db_pool.putconn(conn)
@@ -71,7 +70,7 @@ inicializar_db()
 
 @app.get("/")
 def home():
-    return FileResponse("index.html") if os.path.exists("index.html") else "Sube index.html"
+    return FileResponse("index.html") if os.path.exists("index.html") else "Sube el archivo index.html"
 
 @app.get("/activos")
 def leer_activos():
@@ -91,7 +90,7 @@ def crear(activo: ActivoSchema):
         cur = conn.cursor()
         cur.execute("SELECT id FROM activos WHERE serie = %s", (activo.serie,))
         if cur.fetchone():
-            return {"status": "error", "message": "Serie duplicada"}
+            return {"status": "error", "message": "Ese número de serie ya existe"}
         
         cur.execute("INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)",
                     (activo.categoria, activo.modelo, activo.serie))
@@ -107,10 +106,10 @@ def actualizar(id: int, activo: ActivoSchema):
     conn = get_conn()
     try:
         cur = conn.cursor()
-        # Verificar duplicados (excluyendo el propio equipo)
+        # Verificar que la serie no pertenezca a otro equipo
         cur.execute("SELECT id FROM activos WHERE serie = %s AND id != %s", (activo.serie, id))
         if cur.fetchone():
-            return {"status": "error", "message": "Esa serie ya pertenece a otro equipo"}
+            return {"status": "error", "message": "Serie duplicada en otro equipo"}
 
         cur.execute(
             "UPDATE activos SET categoria=%s, modelo=%s, serie=%s WHERE id=%s",
@@ -160,12 +159,13 @@ def historial(id: int):
 def exportar():
     conn = get_conn()
     try:
+        # Pandas requiere conexión directa o sqlalchemy, aquí usamos raw connection con warning silenciado
         df = pd.read_sql("SELECT * FROM activos", conn)
         output = BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
         output.seek(0)
-        return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=inventario.xlsx"})
+        return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=inventario_it.xlsx"})
     finally:
         release_conn(conn)
 

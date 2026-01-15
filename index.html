@@ -4,11 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Admin Panel v2.0</title>
+    <title>IT Admin Panel - Master</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
         :root {
             --sidebar-width: 250px;
@@ -20,7 +21,7 @@
             overflow-x: hidden;
         }
 
-        /* Sidebar & Layout */
+        /* Sidebar & Overlay */
         #overlay {
             position: fixed;
             top: 0;
@@ -91,10 +92,11 @@
 
             .table-responsive {
                 overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
             }
         }
 
-        /* Componentes */
+        /* Botón Flotante */
         #btn-abrir {
             position: fixed;
             top: 15px;
@@ -111,11 +113,14 @@
             transform: translateX(-20px);
         }
 
+        /* Estilos Generales */
         .nav-link {
             color: rgba(255, 255, 255, 0.7);
             padding: 12px 20px;
             transition: 0.2s;
             cursor: pointer;
+            text-decoration: none;
+            display: block;
         }
 
         .nav-link:hover,
@@ -152,7 +157,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        /* Spinner */
         .spinner-border-sm {
             width: 1rem;
             height: 1rem;
@@ -239,8 +243,8 @@
                             placeholder="Serie"></div>
                     <div class="col-md-3">
                         <button id="btn-guardar" onclick="guardar()" class="btn btn-dark w-100 p-3 fw-bold">
-                            <span class="normal-text">Añadir al Stock</span>
-                            <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            <span class="normal-text">Añadir</span><span
+                                class="spinner-border spinner-border-sm d-none"></span>
                         </button>
                     </div>
                 </div>
@@ -264,7 +268,7 @@
         <div id="v-operaciones" class="vista">
             <h2 class="mb-4">Panel de Operaciones</h2>
             <div class="mb-3"><input type="text" id="buscador" class="form-control p-3 border-0 shadow-sm rounded-4"
-                    placeholder="Buscar..." onkeyup="filtrar()"></div>
+                    placeholder="Buscar equipo, serie o usuario..." onkeyup="filtrar()"></div>
             <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
                 <table class="table align-middle">
                     <thead>
@@ -281,31 +285,45 @@
         </div>
     </div>
 
-    <div class="modal-body">
-        <div class="row">
-            <div class="col-md-7">
-                <input type="hidden" id="edit-id">
-                <label class="small text-muted fw-bold">Categoría</label>
-                <select id="edit-cat" class="form-select mb-3 bg-light border-0">
-                    <option value="Laptop">Laptop</option>
-                    <option value="Monitor">Monitor</option>
-                    <option value="Periférico">Periférico</option>
-                </select>
-
-                <label class="small text-muted fw-bold">Modelo</label>
-                <input type="text" id="edit-mod" class="form-control mb-3 bg-light border-0">
-
-                <label class="small text-muted fw-bold">Número de Serie</label>
-                <input type="text" id="edit-ser" class="form-control bg-light border-0">
-            </div>
-
-            <div class="col-md-5 text-center d-flex flex-column align-items-center justify-content-center border-start">
-                <label class="small text-muted mb-2">Etiqueta de Activo</label>
-                <div id="qr-code" class="p-2 bg-white border rounded mb-2"></div>
-                <small class="text-muted" style="font-size: 0.7rem;">Escanea para ver detalles</small>
-                <button class="btn btn-sm btn-outline-dark mt-2" onclick="imprimirQR()">
-                    <i class="bi bi-printer"></i> Imprimir
-                </button>
+    <div class="modal fade" id="modalEditar" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Editar y Etiquetar</h5><button type="button" class="btn-close"
+                        data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-7">
+                            <input type="hidden" id="edit-id">
+                            <label class="small text-muted fw-bold">Categoría</label>
+                            <select id="edit-cat" class="form-select mb-3 bg-light border-0">
+                                <option value="Laptop">Laptop</option>
+                                <option value="Monitor">Monitor</option>
+                                <option value="Periférico">Periférico</option>
+                            </select>
+                            <label class="small text-muted fw-bold">Modelo</label>
+                            <input type="text" id="edit-mod" class="form-control mb-3 bg-light border-0">
+                            <label class="small text-muted fw-bold">Número de Serie</label>
+                            <input type="text" id="edit-ser" class="form-control mb-3 bg-light border-0">
+                        </div>
+                        <div
+                            class="col-md-5 text-center d-flex flex-column align-items-center justify-content-center border-start">
+                            <label class="small text-muted mb-2 fw-bold">Etiqueta QR</label>
+                            <div id="qr-code" class="p-2 bg-white border rounded mb-2"></div>
+                            <small class="text-muted d-block mb-2" style="font-size:0.7rem">Escanea para ver
+                                ficha</small>
+                            <button class="btn btn-sm btn-outline-dark" onclick="imprimirQR()"><i
+                                    class="bi bi-printer me-1"></i> Imprimir</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0">
+                    <button id="btn-confirmar-edit" onclick="confirmarEdicion()" class="btn btn-warning w-100 fw-bold">
+                        <span class="normal-text">Guardar Cambios</span><span
+                            class="spinner-border spinner-border-sm d-none"></span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -324,10 +342,8 @@
                 </div>
                 <div class="modal-footer border-0">
                     <button id="btn-confirmar-asignar" onclick="confirmarAsignacion()"
-                        class="btn btn-primary w-100 fw-bold">
-                        <span class="normal-text">Confirmar</span>
-                        <span class="spinner-border spinner-border-sm d-none"></span>
-                    </button>
+                        class="btn btn-primary w-100 fw-bold"><span class="normal-text">Confirmar</span><span
+                            class="spinner-border spinner-border-sm d-none"></span></button>
                 </div>
             </div>
         </div>
@@ -338,11 +354,9 @@
             <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4">
                 <input type="hidden" id="id-borrar-temp">
                 <h5 class="fw-bold text-danger">¿Eliminar?</h5>
-                <p class="small text-muted">Irreversible.</p>
-                <button id="btn-confirmar-borrar" onclick="confirmarBorrado()" class="btn btn-danger w-100">
-                    <span class="normal-text">Sí, eliminar</span>
-                    <span class="spinner-border spinner-border-sm d-none"></span>
-                </button>
+                <button id="btn-confirmar-borrar" onclick="confirmarBorrado()" class="btn btn-danger w-100 mt-3"><span
+                        class="normal-text">Sí, eliminar</span><span
+                        class="spinner-border spinner-border-sm d-none"></span></button>
             </div>
         </div>
     </div>
@@ -374,29 +388,21 @@
         let chartEstadoInstance = null;
         let chartCatInstance = null;
 
-        // --- UX: CARGANDO ---
+        // --- UX: SPINNER DE CARGA ---
         function setCargando(btnId, estado) {
             const btn = document.getElementById(btnId);
             const spinner = btn.querySelector('.spinner-border');
             const text = btn.querySelector('.normal-text');
-            if (estado) {
-                btn.disabled = true;
-                spinner.classList.remove('d-none');
-                text.classList.add('d-none');
-            } else {
-                btn.disabled = false;
-                spinner.classList.add('d-none');
-                text.classList.remove('d-none');
-            }
+            if (estado) { btn.disabled = true; spinner.classList.remove('d-none'); text.classList.add('d-none'); }
+            else { btn.disabled = false; spinner.classList.add('d-none'); text.classList.remove('d-none'); }
         }
 
         // --- NAVEGACIÓN ---
         function toggleMenu() {
             document.getElementById('sidebar').classList.toggle('active');
             document.getElementById('overlay').classList.toggle('active');
-            document.getElementById('sidebar').classList.contains('active') ?
-                document.getElementById('btn-abrir').classList.add('oculto') :
-                document.getElementById('btn-abrir').classList.remove('oculto');
+            const btn = document.getElementById('btn-abrir');
+            document.getElementById('sidebar').classList.contains('active') ? btn.classList.add('oculto') : btn.classList.remove('oculto');
         }
 
         function verVentana(id, el) {
@@ -407,32 +413,23 @@
             if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('active')) toggleMenu();
         }
 
-        // --- GRÁFICOS (CHART.JS) ---
+        // --- GRÁFICOS ---
         function actualizarGraficos(data) {
-            const disponibles = data.filter(x => x.estado === 'Disponible').length;
-            const asignados = data.filter(x => x.estado === 'Asignado').length;
-
+            const disp = data.filter(x => x.estado === 'Disponible').length;
+            const asig = data.filter(x => x.estado === 'Asignado').length;
             const cats = {};
             data.forEach(x => { cats[x.categoria] = (cats[x.categoria] || 0) + 1 });
 
-            // Gráfico Estado
             if (chartEstadoInstance) chartEstadoInstance.destroy();
             chartEstadoInstance = new Chart(document.getElementById('chartEstado'), {
                 type: 'doughnut',
-                data: {
-                    labels: ['Disponible', 'Asignado'],
-                    datasets: [{ data: [disponibles, asignados], backgroundColor: ['#198754', '#0dcaf0'] }]
-                }
+                data: { labels: ['Disponible', 'Asignado'], datasets: [{ data: [disp, asig], backgroundColor: ['#198754', '#0dcaf0'] }] }
             });
 
-            // Gráfico Categoría
             if (chartCatInstance) chartCatInstance.destroy();
             chartCatInstance = new Chart(document.getElementById('chartCategoria'), {
                 type: 'bar',
-                data: {
-                    labels: Object.keys(cats),
-                    datasets: [{ label: 'Cantidad', data: Object.values(cats), backgroundColor: '#212529', borderRadius: 5 }]
-                },
+                data: { labels: Object.keys(cats), datasets: [{ label: 'Cantidad', data: Object.values(cats), backgroundColor: '#212529', borderRadius: 5 }] },
                 options: { scales: { y: { beginAtZero: true } } }
             });
         }
@@ -450,8 +447,7 @@
                 document.getElementById('total').innerText = data.length;
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
-
-                actualizarGraficos(data); // 
+                actualizarGraficos(data);
 
                 const tStock = document.getElementById('lista-stock');
                 const tAsignar = document.getElementById('lista-asignar');
@@ -481,13 +477,11 @@
             });
         }
 
-        // --- CREAR / EDITAR / BORRAR / ASIGNAR ---
-
+        // --- ACCIONES CON QR ---
         function guardar() {
             const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
             if (!d.modelo || !d.serie) return notificar("⚠️ Faltan datos", "bg-warning");
-
-            setCargando('btn-guardar', true); // 
+            setCargando('btn-guardar', true);
             fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
                 .then(r => r.json()).then(res => {
                     setCargando('btn-guardar', false);
@@ -501,23 +495,34 @@
             document.getElementById('edit-cat').value = cat;
             document.getElementById('edit-mod').value = mod;
             document.getElementById('edit-ser').value = ser;
+
+            // Generar QR
+            const qrC = document.getElementById("qr-code");
+            qrC.innerHTML = "";
+            new QRCode(qrC, { text: `${window.location.origin}/activos?buscar=${ser}`, width: 100, height: 100 });
+
             new bootstrap.Modal(document.getElementById('modalEditar')).show();
         }
 
         function confirmarEdicion() {
             const id = document.getElementById('edit-id').value;
             const d = { categoria: document.getElementById('edit-cat').value, modelo: document.getElementById('edit-mod').value, serie: document.getElementById('edit-ser').value };
-
             setCargando('btn-confirmar-edit', true);
             fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
                 .then(r => r.json()).then(res => {
                     setCargando('btn-confirmar-edit', false);
-                    if (res.status === "success") {
-                        bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
-                        notificar("✅ Equipo actualizado", "bg-warning");
-                        cargar();
-                    } else { notificar(res.message, "bg-danger"); }
+                    if (res.status === "success") { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("✅ Actualizado", "bg-warning"); cargar(); }
+                    else notificar(res.message, "bg-danger");
                 });
+        }
+
+        function imprimirQR() {
+            const c = document.getElementById('qr-code').innerHTML;
+            const ser = document.getElementById('edit-ser').value;
+            const w = window.open('', '', 'height=500, width=500');
+            w.document.write(`<html><body style="text-align:center; font-family:sans-serif;"><h3>IT MASTER Asset</h3><div style="display:flex;justify-content:center;margin:20px;">${c}</div><p>ID: <strong>${ser}</strong></p></body></html>`);
+            w.document.close();
+            w.print();
         }
 
         function prepararAsignar(id) { document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
@@ -525,27 +530,16 @@
             const id = document.getElementById('id-asignar-temp').value;
             const u = document.getElementById('nombre-usuario-modal').value;
             if (!u) return notificar("⚠️ Falta nombre", "bg-warning");
-
             setCargando('btn-confirmar-asignar', true);
             fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) })
-                .then(() => {
-                    setCargando('btn-confirmar-asignar', false);
-                    bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
-                    notificar("👤 Asignado", "bg-primary");
-                    cargar();
-                });
+                .then(() => { setCargando('btn-confirmar-asignar', false); bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("👤 Asignado", "bg-primary"); cargar(); });
         }
 
         function prepararBorrar(id) { document.getElementById('id-borrar-temp').value = id; new bootstrap.Modal(document.getElementById('modalBorrar')).show(); }
         function confirmarBorrado() {
             const id = document.getElementById('id-borrar-temp').value;
             setCargando('btn-confirmar-borrar', true);
-            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => {
-                setCargando('btn-confirmar-borrar', false);
-                bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide();
-                notificar("🗑️ Eliminado", "bg-dark");
-                cargar();
-            });
+            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => { setCargando('btn-confirmar-borrar', false); bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("🗑️ Eliminado", "bg-dark"); cargar(); });
         }
 
         function verHistorial(id, mod) {
@@ -562,47 +556,6 @@
         function filtrar() {
             const v = document.getElementById('buscador').value.toLowerCase();
             document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
-        }
-
-        function prepararEditar(id, cat, mod, ser) {
-            // 1. Llenar datos
-            document.getElementById('edit-id').value = id;
-            document.getElementById('edit-cat').value = cat;
-            document.getElementById('edit-mod').value = mod;
-            document.getElementById('edit-ser').value = ser;
-
-            // 2. Generar QR
-            const qrContainer = document.getElementById("qr-code");
-            qrContainer.innerHTML = ""; // Limpiar QR anterior
-
-            // Aquí creamos la URL única para este equipo (asumiendo que tu web está online)
-            // Si estás en local, generará localhost. En Render, generará tu dominio real.
-            const urlFicha = `${window.location.origin}/activos?buscar=${ser}`;
-
-            new QRCode(qrContainer, {
-                text: urlFicha,
-                width: 100,
-                height: 100,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            // 3. Mostrar modal
-            new bootstrap.Modal(document.getElementById('modalEditar')).show();
-        }
-
-        // Función extra para imprimir solo el QR (Truco Pro)
-        function imprimirQR() {
-            const contenido = document.getElementById('qr-code').innerHTML;
-            const ventana = window.open('', '', 'height=500, width=500');
-            ventana.document.write('<html><body>');
-            ventana.document.write('<h2 style="text-align:center;">Propiedad de IT MASTER</h2>');
-            ventana.document.write('<div style="display:flex;justify-content:center;margin-top:20px;">' + contenido + '</div>');
-            ventana.document.write('<p style="text-align:center;">ID Activo: ' + document.getElementById('edit-ser').value + '</p>');
-            ventana.document.write('</body></html>');
-            ventana.document.close();
-            ventana.print();
         }
 
         cargar();
