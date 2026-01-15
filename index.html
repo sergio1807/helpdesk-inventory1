@@ -179,6 +179,46 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalAsignar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold">Asignar Equipo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="id-asignar-temp">
+                    <label class="form-label text-muted small">Nombre del Usuario</label>
+                    <input type="text" id="nombre-usuario-modal" class="form-control border-0 bg-light p-3"
+                        placeholder="Ej: Juan Pérez">
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-light rounded-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" onclick="confirmarAsignacion()"
+                        class="btn btn-primary rounded-3 px-4">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalBorrar" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-body text-center p-4">
+                    <input type="hidden" id="id-borrar-temp">
+                    <i class="bi bi-exclamation-triangle text-danger display-4"></i>
+                    <h5 class="mt-3 fw-bold">¿Eliminar equipo?</h5>
+                    <p class="text-muted small">Esta acción no se puede deshacer.</p>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-light w-100" data-bs-dismiss="modal">No</button>
+                        <button type="button" onclick="confirmarBorrado()" class="btn btn-danger w-100">Sí,
+                            borrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const iconos = { Laptop: '💻', Monitor: '🖥️', Servidor: '🗄️', Periférico: '🖱️' };
@@ -250,19 +290,32 @@
         }
 
         function asignar(id) {
-            const u = prompt("Ingrese el nombre del nuevo usuario:");
-            if (u) {
-                fetch('/asignar', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: id, usuario: u })
-                }).then(res => res.json()).then(data => {
-                    if (data.status === "success") {
-                        mostrarNotificacion("👤 Usuario asignado", "bg-primary");
-                        cargar();
-                    }
-                });
+            document.getElementById('id-asignar-temp').value = id;
+            document.getElementById('nombre-usuario-modal').value = '';
+            const myModal = new bootstrap.Modal(document.getElementById('modalAsignar'));
+            myModal.show();
+        }
+
+        function confirmarAsignacion() {
+            const id = document.getElementById('id-asignar-temp').value;
+            const u = document.getElementById('nombre-usuario-modal').value;
+
+            if (!u) {
+                mostrarNotificacion("⚠️ Escribe un nombre", "bg-warning");
+                return;
             }
+
+            fetch('/asignar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: id, usuario: u })
+            }).then(res => res.json()).then(data => {
+                if (data.status === "success") {
+                    bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
+                    mostrarNotificacion("👤 Usuario asignado", "bg-primary");
+                    cargar();
+                }
+            });
         }
 
         function verHistorial(id, modelo) {
@@ -277,12 +330,18 @@
         }
 
         function borrar(id) {
-            if (confirm("¿Eliminar equipo?")) {
-                fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => {
-                    mostrarNotificacion("🗑️ Equipo eliminado", "bg-secondary");
-                    cargar();
-                });
-            }
+            document.getElementById('id-borrar-temp').value = id;
+            const myModal = new bootstrap.Modal(document.getElementById('modalBorrar'));
+            myModal.show();
+        }
+
+        function confirmarBorrado() {
+            const id = document.getElementById('id-borrar-temp').value;
+            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => {
+                bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide();
+                mostrarNotificacion("🗑️ Equipo eliminado", "bg-secondary");
+                cargar();
+            });
         }
 
         function filtrar() {
