@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IT Admin Panel - Master</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
@@ -13,10 +14,11 @@
 
         body {
             background-color: #f8f9fa;
-            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
         }
 
-        /* SIDEBAR RESPONSIVO */
+        /* SIDEBAR */
         #sidebar {
             width: var(--sidebar-width);
             height: 100vh;
@@ -24,94 +26,65 @@
             background: #212529;
             color: white;
             transition: 0.3s;
-            z-index: 1000;
+            z-index: 1050;
         }
 
+        /* CONTENIDO */
         #content {
             margin-left: var(--sidebar-width);
             padding: 20px;
             transition: 0.3s;
         }
 
-        /* Ajustes para Móvil (Pantallas menores a 768px) */
+        /* RESPONSIVE: Pantallas de móvil */
         @media (max-width: 768px) {
             #sidebar {
-                margin-left: calc(var(--sidebar-width) * -1);
+                left: calc(var(--sidebar-width) * -1);
             }
 
+            /* Esconde el menú a la izquierda */
             #sidebar.active {
-                margin-left: 0;
+                left: 0;
             }
 
+            /* Lo muestra cuando activamos la clase */
             #content {
                 margin-left: 0;
                 padding: 10px;
+                width: 100%;
             }
 
-            #content.active {
-                margin-left: 0;
-                filter: blur(2px);
+            /* Forzamos a que las tarjetas del dashboard ocupen todo el ancho */
+            .col-md-4 {
+                width: 100% !important;
             }
 
-            /* Botón de menú flotante para móvil */
-            .btn-movil {
-                display: block !important;
-            }
-
-            /* Tablas con scroll horizontal para que no se rompan */
+            /* Hacemos que las tablas se puedan deslizar de lado */
             .table-responsive {
-                font-size: 0.85rem;
+                border: 0;
+                margin-bottom: 0;
+                overflow-y: hidden;
             }
         }
 
-        .btn-movil {
+        /* BOTÓN MENÚ MÓVIL (Solo visible en pantallas pequeñas) */
+        .menu-toggle {
             display: none;
             position: fixed;
-            bottom: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
             z-index: 1100;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.7);
-            cursor: pointer;
-            border-radius: 8px;
-            margin: 5px 15px;
-        }
-
-        .nav-link.active {
-            background: rgba(255, 255, 255, 0.1);
+            background: #212529;
             color: white;
-        }
-
-        .vista {
-            display: none;
-            animation: fadeIn 0.3s;
-        }
-
-        .vista.activa {
-            display: block;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-            }
-
-            to {
-                opacity: 1;
-            }
-        }
-
-        .card-custom {
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-            margin-bottom: 15px;
+            border-radius: 8px;
+            padding: 10px 15px;
+        }
+
+        @media (max-width: 768px) {
+            .menu-toggle {
+                display: block;
+            }
         }
     </style>
 </head>
