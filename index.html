@@ -620,8 +620,10 @@
             // Generar QR
             const qrC = document.getElementById("qr-code");
             qrC.innerHTML = "";
-            new QRCode(qrC, { text: `${window.location.origin}/activos?buscar=${ser}`, width: 100, height: 100 });
-
+            // Esto lleva al Dashboard (HTML) con el buscador activado
+            // Fíjate que hemos quitado la palabra "activos"
+            const urlFicha = `${window.location.origin}/?buscar=${ser}`;
+            new QRCode(qrC, { text: urlFicha, width: 100, height: 100 });
             new bootstrap.Modal(document.getElementById('modalEditar')).show();
         }
 
