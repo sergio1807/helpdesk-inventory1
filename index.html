@@ -18,30 +18,31 @@
             font-family: 'Segoe UI', sans-serif;
         }
 
-        /* --- DISEÑO PARA ESCRITORIO (PC) --- */
+        /* --- PC (Escritorio) --- */
         @media (min-width: 769px) {
             #sidebar {
                 width: var(--sidebar-width);
                 height: 100vh;
                 position: fixed;
+                left: 0;
                 background: #212529;
                 color: white;
-                display: block;
             }
 
             #content {
                 margin-left: var(--sidebar-width);
-                padding: 30px;
+                padding: 40px;
+                width: calc(100% - var(--sidebar-width));
             }
 
-            .menu-toggle {
-                display: none;
+            #btn-abrir {
+                display: none !important;
             }
 
-            /* Ocultar botón de menú en PC */
+            /* Escondemos el botón de abrir en PC */
         }
 
-        /* --- DISEÑO PARA MÓVIL --- */
+        /* --- MÓVIL --- */
         @media (max-width: 768px) {
             #sidebar {
                 position: fixed;
@@ -49,7 +50,7 @@
                 width: var(--sidebar-width);
                 height: 100vh;
                 background: #212529;
-                z-index: 1100;
+                z-index: 2000;
                 transition: 0.3s;
             }
 
@@ -57,52 +58,43 @@
                 left: 0;
             }
 
-            /* Solo sale si tocamos el botón */
+            /* El menú sale solo si activamos 'active' */
 
             #content {
                 margin-left: 0;
-                padding: 15px;
+                padding: 20px;
                 width: 100%;
             }
 
-            /* Botón de menú flotante solo en móvil */
-            .menu-toggle {
-                display: block;
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                z-index: 1200;
-                border-radius: 50%;
-                width: 60px;
-                height: 60px;
+            /* Ajustamos las tarjetas para que no se amontonen */
+            .card-custom {
+                margin-bottom: 20px;
             }
 
-            /* Ajuste de tarjetas en móvil */
             .col-md-4 {
                 width: 100% !important;
-                margin-bottom: 10px;
             }
 
-            /* Forzar tablas a tener scroll y no romper el layout */
+            /* Scroll para tablas */
             .table-responsive {
-                border: 0;
+                border-radius: 10px;
                 overflow-x: auto;
-                -webkit-overflow-scrolling: touch;
             }
         }
 
-        /* Estilos generales */
+        /* Estilos generales de belleza */
         .nav-link {
             color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
-            padding: 10px 20px;
-            display: block;
+            padding: 12px 20px;
             text-decoration: none;
+            display: block;
         }
 
         .nav-link.active {
             background: rgba(255, 255, 255, 0.1);
             color: white;
+            border-left: 4px solid #0d6efd;
         }
 
         .vista {
@@ -112,21 +104,15 @@
         .vista.activa {
             display: block;
         }
-
-        .card-custom {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
     </style>
 </head>
 
 <body>
-    <button class="btn btn-dark btn-movil" onclick="toggleSidebar()">
-        <i class="bi bi-list fs-3"></i>
-    </button>
 
     <div id="sidebar">
+        <button class="btn btn-dark btn-movil" onclick="toggleSidebar()">
+            <i class="bi bi-list fs-3"></i>
+        </button>
         <div class="p-4">
             <h4 class="fw-bold"><i class="bi bi-shield-lock-fill"></i> IT MASTER</h4>
         </div>
@@ -300,6 +286,20 @@
             const content = document.getElementById('content');
             sidebar.classList.toggle('active');
             content.classList.toggle('active');
+        }
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const btnAbrir = document.getElementById('btn-abrir');
+
+            sidebar.classList.toggle('active');
+
+            // Si el menú está abierto, escondemos el botón de "abrir" para que no estorbe
+            if (sidebar.classList.contains('active')) {
+                btnAbrir.style.display = 'none';
+            } else {
+                btnAbrir.style.display = 'block';
+            }
         }
 
         function notificar(msg, color = 'bg-dark') {
