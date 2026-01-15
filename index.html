@@ -608,12 +608,66 @@
         }
 
         function imprimirQR() {
-            const c = document.getElementById('qr-code').innerHTML;
-            const ser = document.getElementById('edit-ser').value;
-            const w = window.open('', '', 'height=500, width=500');
-            w.document.write(`<html><body style="text-align:center; font-family:sans-serif;"><h3>IT MASTER Asset</h3><div style="display:flex;justify-content:center;margin:20px;">${c}</div><p>ID: <strong>${ser}</strong></p></body></html>`);
-            w.document.close();
-            w.print();
+            const qrContent = document.getElementById('qr-code').innerHTML;
+            const serie = document.getElementById('edit-ser').value;
+            const modelo = document.getElementById('edit-mod').value;
+
+            const ventana = window.open('', '', 'height=600, width=600');
+
+            ventana.document.write(`
+        <html>
+        <head>
+            <title>Etiqueta de Activo</title>
+            <style>
+                body { 
+                    font-family: 'Segoe UI', sans-serif; 
+                    display: flex; 
+                    justify-content: center; 
+                    align-items: center; 
+                    height: 100vh; 
+                    margin: 0;
+                    background: #f0f0f0; /* Fondo gris solo en pantalla para resaltar la etiqueta */
+                }
+                .etiqueta {
+                    width: 300px;
+                    padding: 20px;
+                    border: 3px solid #000;
+                    border-radius: 10px;
+                    text-align: center;
+                    background: white;
+                    page-break-inside: avoid;
+                }
+                h3 { margin: 0 0 10px 0; text-transform: uppercase; font-size: 18px; border-bottom: 2px solid #000; padding-bottom: 5px; }
+                .qr-box { margin: 15px auto; display: flex; justify-content: center; }
+                .info { font-size: 14px; font-weight: bold; margin-top: 10px; }
+                .small { font-size: 10px; color: #555; margin-top: 5px; }
+                
+                /* Al imprimir, quitamos el fondo gris y centramos */
+                @media print {
+                    body { background: white; height: auto; display: block; }
+                    .etiqueta { border: 2px solid #000; margin: 0; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="etiqueta">
+                <h3>🏢 Propiedad de IT MASTER</h3>
+                <div class="qr-box">${qrContent}</div>
+                <div class="info">S/N: ${serie}</div>
+                <div class="small">Modelo: ${modelo}</div>
+                <div class="small">Si encuentra este equipo, contacte a Soporte IT</div>
+            </div>
+        </body>
+        </html>
+    `);
+
+            ventana.document.close();
+            // Esperamos un poco para que cargue la imagen del QR antes de imprimir
+            setTimeout(() => {
+                ventana.focus();
+                ventana.print();
+                ventana.close();
+            }, 500);
         }
 
         function prepararAsignar(id, modelo, serie) {
