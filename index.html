@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         :root {
@@ -405,6 +406,94 @@
             document.getElementById('sidebar').classList.contains('active') ? btn.classList.add('oculto') : btn.classList.remove('oculto');
         }
 
+        // --- NUEVA FUNCIÓN CON GENERACIÓN DE PDF ---
+        async function confirmarAsignacion() {
+            const id = document.getElementById('id-asignar-temp').value;
+            const u = document.getElementById('nombre-usuario-modal').value;
+
+            // Necesitamos recuperar el modelo y serie para ponerlos en el PDF. 
+            // Como el modal solo tiene el ID, los buscamos "al vuelo" en la tabla (truco rápido) o los pedimos al backend.
+            // Para simplificar, asumiremos que el backend nos responde bien, pero aquí usaremos un truco visual:
+            // Al asignar, guardaremos temporalmente los datos del equipo en variables globales cuando abrimos el modal.
+
+            if (!u) return notificar("⚠️ Falta nombre del usuario", "bg-warning");
+
+            setCargando('btn-confirmar-asignar', true);
+
+            // 1. Guardar en Base de Datos
+            const response = await fetch('/asignar', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id, usuario: u })
+            });
+
+            setCargando('btn-confirmar-asignar', false);
+
+            if (response.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
+                notificar("👤 Asignado correctamente", "bg-primary");
+                cargar(); // Recargar tabla
+
+                // 2. PREGUNTAR SI GENERAR PDF
+                if (confirm("¿Quieres descargar el Acta de Entrega en PDF?")) {
+                    generarPDFEntrega(u);
+                }
+            } else {
+                notificar("❌ Error al asignar", "bg-danger");
+            }
+        }
+
+        // --- FUNCIÓN GENERADORA DE PDF (NUEVA) ---
+        function generarPDFEntrega(usuario) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const fecha = new Date().toLocaleDateString();
+
+            // Intentamos recuperar datos del equipo seleccionado (del DOM o variables)
+            // Nota: Para que esto sea perfecto, deberíamos haber pasado modelo/serie a 'prepararAsignar'.
+            // Por ahora pondremos un placeholder o necesitamos ajustar 'prepararAsignar' (ver abajo).
+            const modelo = window.tempModelo || "Equipo IT";
+            const serie = window.tempSerie || "S/N Desconocido";
+
+            // DISEÑO DEL PDF
+            doc.setFontSize(22);
+            doc.text("ACTA DE ENTREGA DE EQUIPO", 105, 20, null, null, "center");
+
+            doc.setFontSize(12);
+            doc.text("Departamento de IT - IT MASTER", 20, 30);
+            doc.line(20, 32, 190, 32); // Línea horizontal
+
+            doc.setFontSize(10);
+            doc.text(`Fecha de entrega: ${fecha}`, 20, 45);
+
+            doc.setFontSize(12);
+            doc.text("Por medio de la presente, se hace entrega del siguiente activo:", 20, 60);
+
+            // Caja de datos del equipo
+            doc.setDrawColor(0);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(20, 70, 170, 40, 'FD');
+
+            doc.setFont("helvetica", "bold");
+            doc.text(`Usuario Responsable: ${usuario}`, 30, 80);
+            doc.text(`Modelo del Equipo: ${modelo}`, 30, 90);
+            doc.text(`Número de Serie: ${serie}`, 30, 100);
+
+            doc.setFont("helvetica", "normal");
+            doc.text("El usuario se compromete a cuidar el equipo y notificar cualquier", 20, 125);
+            doc.text("incidencia al departamento de soporte inmediatamente.", 20, 130);
+
+            // Línea de firma
+            doc.line(40, 180, 100, 180);
+            doc.text("Firma del Usuario", 40, 185);
+
+            doc.line(120, 180, 180, 180);
+            doc.text("Firma IT Manager", 120, 185);
+
+            // Guardar
+            doc.save(`Acta_Entrega_${usuario}_${fecha}.pdf`);
+        }
+
         function verVentana(id, el) {
             document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
             document.getElementById(id).classList.add('activa');
@@ -469,7 +558,9 @@
                         <td><code>${a.serie}</code></td>
                         <td><span class="badge bg-light text-dark">${a.usuario}</span></td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id})">Asignar</button>
+                            <button class="btn btn-sm btn-primary rounded-pill px-3 me-1"
+                                onclick="prepararAsignar(${a.id}, '${a.modelo}', '${a.serie}')"> Asignar
+                            </button>
                             <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button>
                         </td>
                     </tr>`;
@@ -525,7 +616,15 @@
             w.print();
         }
 
-        function prepararAsignar(id) { document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
+        function prepararAsignar(id, modelo, serie) {
+            // Guardamos datos en variables globales temporales para usarlos en el PDF
+            window.tempModelo = modelo;
+            window.tempSerie = serie;
+
+            document.getElementById('id-asignar-temp').value = id;
+            new bootstrap.Modal(document.getElementById('modalAsignar')).show();
+        }
+
         function confirmarAsignacion() {
             const id = document.getElementById('id-asignar-temp').value;
             const u = document.getElementById('nombre-usuario-modal').value;
