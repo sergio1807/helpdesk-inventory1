@@ -625,15 +625,6 @@
             new bootstrap.Modal(document.getElementById('modalAsignar')).show();
         }
 
-        function confirmarAsignacion() {
-            const id = document.getElementById('id-asignar-temp').value;
-            const u = document.getElementById('nombre-usuario-modal').value;
-            if (!u) return notificar("⚠️ Falta nombre", "bg-warning");
-            setCargando('btn-confirmar-asignar', true);
-            fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) })
-                .then(() => { setCargando('btn-confirmar-asignar', false); bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("👤 Asignado", "bg-primary"); cargar(); });
-        }
-
         function prepararBorrar(id) { document.getElementById('id-borrar-temp').value = id; new bootstrap.Modal(document.getElementById('modalBorrar')).show(); }
         function confirmarBorrado() {
             const id = document.getElementById('id-borrar-temp').value;
