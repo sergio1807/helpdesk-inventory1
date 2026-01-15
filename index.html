@@ -15,76 +15,108 @@
         body {
             background-color: #f8f9fa;
             margin: 0;
-            overflow-x: hidden;
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        /* SIDEBAR */
-        #sidebar {
-            width: var(--sidebar-width);
-            height: 100vh;
-            position: fixed;
-            background: #212529;
-            color: white;
-            transition: 0.3s;
-            z-index: 1050;
-        }
-
-        /* CONTENIDO */
-        #content {
-            margin-left: var(--sidebar-width);
-            padding: 20px;
-            transition: 0.3s;
-        }
-
-        /* RESPONSIVE: Pantallas de móvil */
-        @media (max-width: 768px) {
+        /* --- DISEÑO PARA ESCRITORIO (PC) --- */
+        @media (min-width: 769px) {
             #sidebar {
-                left: calc(var(--sidebar-width) * -1);
+                width: var(--sidebar-width);
+                height: 100vh;
+                position: fixed;
+                background: #212529;
+                color: white;
+                display: block;
             }
 
-            /* Esconde el menú a la izquierda */
+            #content {
+                margin-left: var(--sidebar-width);
+                padding: 30px;
+            }
+
+            .menu-toggle {
+                display: none;
+            }
+
+            /* Ocultar botón de menú en PC */
+        }
+
+        /* --- DISEÑO PARA MÓVIL --- */
+        @media (max-width: 768px) {
+            #sidebar {
+                position: fixed;
+                left: -250px;
+                width: var(--sidebar-width);
+                height: 100vh;
+                background: #212529;
+                z-index: 1100;
+                transition: 0.3s;
+            }
+
             #sidebar.active {
                 left: 0;
             }
 
-            /* Lo muestra cuando activamos la clase */
+            /* Solo sale si tocamos el botón */
+
             #content {
                 margin-left: 0;
-                padding: 10px;
+                padding: 15px;
                 width: 100%;
             }
 
-            /* Forzamos a que las tarjetas del dashboard ocupen todo el ancho */
-            .col-md-4 {
-                width: 100% !important;
-            }
-
-            /* Hacemos que las tablas se puedan deslizar de lado */
-            .table-responsive {
-                border: 0;
-                margin-bottom: 0;
-                overflow-y: hidden;
-            }
-        }
-
-        /* BOTÓN MENÚ MÓVIL (Solo visible en pantallas pequeñas) */
-        .menu-toggle {
-            display: none;
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 1100;
-            background: #212529;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 10px 15px;
-        }
-
-        @media (min-width: 768px) {
+            /* Botón de menú flotante solo en móvil */
             .menu-toggle {
                 display: block;
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                z-index: 1200;
+                border-radius: 50%;
+                width: 60px;
+                height: 60px;
             }
+
+            /* Ajuste de tarjetas en móvil */
+            .col-md-4 {
+                width: 100% !important;
+                margin-bottom: 10px;
+            }
+
+            /* Forzar tablas a tener scroll y no romper el layout */
+            .table-responsive {
+                border: 0;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+
+        /* Estilos generales */
+        .nav-link {
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 10px 20px;
+            display: block;
+            text-decoration: none;
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .vista {
+            display: none;
+        }
+
+        .vista.activa {
+            display: block;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
     </style>
 </head>
