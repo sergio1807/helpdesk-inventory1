@@ -308,8 +308,19 @@
         function verVentana(id, el) {
             document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
             document.getElementById(id).classList.add('activa');
+
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             el.classList.add('active');
+
+            // Si es móvil, cerramos menú y nos aseguramos de que el botón vuelva a aparecer
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('sidebar');
+                const btnAbrir = document.getElementById('btn-abrir');
+
+                sidebar.classList.remove('active');
+                btnAbrir.style.opacity = "1";
+                btnAbrir.style.pointerEvents = "auto";
+            }
         }
 
         function toggleSidebar() {
@@ -325,11 +336,13 @@
 
             sidebar.classList.toggle('active');
 
-            // Si el menú está abierto, escondemos el botón de "abrir" para que no estorbe
+            // Control de visibilidad del botón disparador
             if (sidebar.classList.contains('active')) {
-                btnAbrir.style.display = 'none';
+                btnAbrir.style.opacity = "0";
+                btnAbrir.style.pointerEvents = "none";
             } else {
-                btnAbrir.style.display = 'block';
+                btnAbrir.style.opacity = "1";
+                btnAbrir.style.pointerEvents = "auto";
             }
         }
 
