@@ -189,6 +189,14 @@
             });
         }
 
+        function verVentana(idVentana, elemento) {
+            document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
+            document.getElementById(idVentana).classList.add('activa');
+
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            elemento.classList.add('active');
+        }
+
         function filtrar() {
             const texto = document.getElementById('buscador').value.toLowerCase();
             const filas = document.querySelectorAll('#lista tr');
@@ -265,6 +273,40 @@
                             alert("Error al asignar: " + data.message);
                         }
                     });
+            }
+
+            function cargar() {
+                fetch('/activos').then(r => r.json()).then(data => {
+                    // Actualizar Stats
+                    document.getElementById('total').innerText = data.length;
+                    document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
+                    document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
+
+                    const tbodyStock = document.getElementById('lista-stock');
+                    const tbodyAsignar = document.getElementById('lista-asignar');
+                    tbodyStock.innerHTML = ''; tbodyAsignar.innerHTML = '';
+
+                    data.forEach(a => {
+                        // Tabla Stock
+                        tbodyStock.innerHTML += `<tr>
+                        <td>${iconos[a.categoria] || '📦'} ${a.categoria}</td>
+                        <td>${a.modelo}</td>
+                        <td><code>${a.serie}</code></td>
+                        <td><button class="btn btn-sm btn-outline-danger" onclick="borrar(${a.id})"><i class="bi bi-trash"></i></button></td>
+                    </tr>`;
+
+                        // Tabla Asignaciones
+                        tbodyAsignar.innerHTML += `<tr>
+                        <td>${a.modelo}</td>
+                        <td>${a.serie}</td>
+                        <td><span class="badge bg-light text-dark">${a.usuario}</span></td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="asignar(${a.id})">Asignar</button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock"></i></button>
+                        </td>
+                    </tr>`;
+                    });
+                });
             }
         }
 
