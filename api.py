@@ -8,6 +8,11 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel
 import os
 from io import BytesIO
+import secrets
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
+
+security = HTTPBasic()
 
 app = FastAPI()
 
@@ -64,15 +69,28 @@ def inicializar_db():
     finally:
         release_conn(conn)
 
+def check_credentials(credentials: HTTPBasicCredentials = Depends(security)):
+    # Cambia esto por un usuario y contraseña seguros
+    correct_username = secrets.compare_digest(credentials.username, "admin")
+    correct_password = secrets.compare_digest(credentials.password, "supersecreto123")
+    
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales incorrectas",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return credentials.username
+
 inicializar_db()
 
 # --- RUTAS ---
 
-@app.get("/")
+@app.get("/", dependencies=[Depends(check_credentials)])
 def home():
     return FileResponse("index.html") if os.path.exists("index.html") else "Sube el archivo index.html"
 
-@app.get("/activos")
+@app.get("/activos", dependencies=[Depends(check_credentials)])
 def leer_activos():
     conn = get_conn()
     try:
@@ -83,7 +101,7 @@ def leer_activos():
         cur.close()
         release_conn(conn)
 
-@app.post("/crear")
+@app.post("/crear", dependencies=[Depends(check_credentials)])
 def crear(activo: ActivoSchema):
     conn = get_conn()
     try:
@@ -101,7 +119,7 @@ def crear(activo: ActivoSchema):
     finally:
         release_conn(conn)
 
-@app.put("/actualizar/{id}")
+@app.put("/actualizar/{id}", dependencies=[Depends(check_credentials)])
 def actualizar(id: int, activo: ActivoSchema):
     conn = get_conn()
     try:
@@ -122,7 +140,7 @@ def actualizar(id: int, activo: ActivoSchema):
     finally:
         release_conn(conn)
 
-@app.post("/asignar")
+@app.post("/asignar", dependencies=[Depends(check_credentials)])
 def asignar(datos: AsignacionSchema):
     conn = get_conn()
     try:
@@ -134,7 +152,7 @@ def asignar(datos: AsignacionSchema):
     finally:
         release_conn(conn)
 
-@app.delete("/eliminar/{id}")
+@app.delete("/eliminar/{id}", dependencies=[Depends(check_credentials)])
 def eliminar(id: int):
     conn = get_conn()
     try:
@@ -145,7 +163,7 @@ def eliminar(id: int):
     finally:
         release_conn(conn)
 
-@app.get("/historial/{id}")
+@app.get("/historial/{id}", dependencies=[Depends(check_credentials)])
 def historial(id: int):
     conn = get_conn()
     try:
@@ -155,7 +173,7 @@ def historial(id: int):
     finally:
         release_conn(conn)
 
-@app.get("/exportar")
+@app.get("/exportar", dependencies=[Depends(check_credentials)])
 def exportar():
     conn = get_conn()
     try:
