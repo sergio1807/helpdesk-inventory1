@@ -3,10 +3,9 @@ import psycopg2
 import pandas as pd
 from fastapi import FastAPI, Body
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from psycopg2.extras import RealDictCursor
 import os
-from fastapi.responses import StreamingResponse
 from io import BytesIO
 app = FastAPI()
 
@@ -61,49 +60,39 @@ def obtener_activos():
     return [dict(row) for row in filas]
 
 @app.post("/crear")
-def crear_activo(datos: dict = Body(...)):
+def crear_activo(d: dict = Body(...)):
     conexion = conectar_db()
-    # Usamos RealDictCursor para que sea compatible con tu código anterior
     cursor = conexion.cursor()
     try:
-        # Extraemos los datos del JSON
-        categoria = datos.get('categoria')
-        modelo = datos.get('modelo')
-        serie = datos.get('serie')
+        # 1. VALIDACIÓN: ¿Ya existe este número de serie?
+        cursor.execute("SELECT id FROM activos WHERE serie = %s", (d['serie'],))
+        if cursor.fetchone():
+            return {"status": "error", "message": "¡Error! Ese Número de Serie ya está registrado."}
 
-        # Insertamos usando %s (Sintaxis oficial de PostgreSQL/psycopg2)
+        # 2. REGISTRO
         cursor.execute(
-            "INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)",
-            (categoria, modelo, serie)
+            "INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)", 
+            (d['categoria'], d['modelo'], d['serie'])
         )
         conexion.commit()
-        print("✅ Registro insertado con éxito")
         return {"status": "success"}
     except Exception as e:
-        print(f"❌ Error al insertar: {e}")
         return {"status": "error", "message": str(e)}
     finally:
-        cursor.close()
         conexion.close()
 
 @app.post("/asignar")
-def asignar_activo(datos: dict = Body(...)):
+def asignar(d: dict = Body(...)):
     conexion = conectar_db()
     cursor = conexion.cursor()
     try:
-        id_activo = datos.get('id')
-        nuevo_usuario = datos.get('usuario')
-
-        # 1. Actualizamos el estado del activo
-        cursor.execute(
-            "UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s",
-            (nuevo_usuario, id_activo)
-        )
+        # Actualizamos el activo
+        cursor.execute("UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s", (d['usuario'], d['id']))
         
-        # 2. Guardamos el movimiento en el historial
+        # HISTORIAL: Guardamos quién lo recibió y cuándo
         cursor.execute(
-            "INSERT INTO historial (activo_id, usuario, accion) VALUES (%s, %s, %s)",
-            (id_activo, nuevo_usuario, 'Asignación')
+            "INSERT INTO historial (activo_id, detalle) VALUES (%s, %s)", 
+            (d['id'], f"Equipo entregado a {d['usuario']}")
         )
         
         conexion.commit()

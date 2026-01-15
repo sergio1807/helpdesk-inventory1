@@ -149,10 +149,34 @@
         }
 
         function guardar() {
-            const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
-            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(() => {
-                document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar();
-            });
+            const d = {
+                categoria: document.getElementById('cat').value,
+                modelo: document.getElementById('mod').value,
+                serie: document.getElementById('ser').value
+            };
+
+            if (!d.modelo || !d.serie) {
+                alert("Por favor, completa el Modelo y el Número de Serie.");
+                return;
+            }
+
+            fetch('/crear', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(d)
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "error") {
+                        // Aquí mostramos el error de duplicado o cualquier otro
+                        alert(data.message);
+                    } else {
+                        // Limpiamos y recargamos si todo salió bien
+                        document.getElementById('mod').value = '';
+                        document.getElementById('ser').value = '';
+                        cargar();
+                    }
+                });
         }
 
         function asignar(id) {
