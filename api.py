@@ -86,20 +86,28 @@ def asignar(d: dict = Body(...)):
     conexion = conectar_db()
     cursor = conexion.cursor()
     try:
-        # Actualizamos el activo
-        cursor.execute("UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s", (d['usuario'], d['id']))
+        activo_id = d.get('id')
+        usuario = d.get('usuario')
+
+        # 1. Actualizar el activo
+        cursor.execute(
+            "UPDATE activos SET usuario = %s, estado = 'Asignado' WHERE id = %s", 
+            (usuario, activo_id)
+        )
         
-        # HISTORIAL: Guardamos quién lo recibió y cuándo
+        # 2. Registrar en historial (Asegúrate de que la tabla 'historial' exista)
         cursor.execute(
             "INSERT INTO historial (activo_id, detalle) VALUES (%s, %s)", 
-            (d['id'], f"Equipo entregado a {d['usuario']}")
+            (activo_id, f"Asignado a {usuario}")
         )
         
         conexion.commit()
         return {"status": "success"}
     except Exception as e:
+        print(f"Error en asignar: {e}")
         return {"status": "error", "message": str(e)}
     finally:
+        cursor.close()
         conexion.close()
 
 @app.delete("/eliminar/{id}")
@@ -138,12 +146,14 @@ def exportar():
 @app.get("/historial/{activo_id}")
 def obtener_historial(activo_id: int):
     conexion = conectar_db()
-    # Usamos RealDictCursor para que JavaScript entienda los datos
     cursor = conexion.cursor(cursor_factory=RealDictCursor)
-    cursor.execute("SELECT detalle, fecha FROM historial WHERE activo_id = %s ORDER BY fecha DESC", (activo_id,))
-    historial = cursor.fetchall()
-    conexion.close()
-    return historial
+    try:
+        cursor.execute("SELECT detalle, fecha FROM historial WHERE activo_id = %s ORDER BY fecha DESC", (activo_id,))
+        res = cursor.fetchall()
+        return res
+    finally:
+        cursor.close()
+        conexion.close()
 
 if __name__ == "__main__":
     import uvicorn

@@ -153,20 +153,23 @@
 
         function verHistorial(id, modelo) {
             fetch(`/historial/${id}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) throw new Error("No se pudo obtener el historial");
+                    return res.json();
+                })
                 .then(datos => {
                     if (datos.length === 0) {
-                        alert(`El equipo ${modelo} no tiene movimientos registrados aún.`);
+                        alert("Este equipo aún no tiene movimientos.");
                     } else {
-                        let mensaje = `📜 HISTORIAL DE: ${modelo.toUpperCase()}\n\n`;
+                        let texto = `HISTORIAL: ${modelo}\n` + "=".repeat(20) + "\n";
                         datos.forEach(h => {
                             const fecha = new Date(h.fecha).toLocaleString();
-                            mensaje += `📍 ${fecha} -> ${h.detalle}\n`;
+                            texto += `• ${fecha}: ${h.detalle}\n`;
                         });
-                        alert(mensaje);
+                        alert(texto);
                     }
                 })
-                .catch(err => console.error("Error al cargar historial:", err));
+                .catch(err => alert("Error: " + err.message));
         }
 
         function guardar() {
@@ -201,8 +204,22 @@
         }
 
         function asignar(id) {
-            const u = prompt("Ingrese el nombre del usuario:");
-            if (u) fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) }).then(() => cargar());
+            const u = prompt("Ingrese el nombre del nuevo usuario:");
+            if (u) {
+                fetch('/asignar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: id, usuario: u }) // Enviamos 'id' y 'usuario'
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            cargar(); // Recargar tabla
+                        } else {
+                            alert("Error al asignar: " + data.message);
+                        }
+                    });
+            }
         }
 
         function borrar(id) {
