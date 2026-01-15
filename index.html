@@ -201,6 +201,7 @@
 
         function cargar() {
             fetch('/activos').then(r => r.json()).then(data => {
+                // Actualizar Dashboard
                 document.getElementById('total').innerText = data.length;
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
@@ -234,7 +235,7 @@
         function guardar() {
             const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
             if (!d.modelo || !d.serie) {
-                mostrarNotificacion("Completa todos los campos", "bg-warning");
+                mostrarNotificacion("⚠️ Completa los campos", "bg-warning");
                 return;
             }
             fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
@@ -270,7 +271,7 @@
                 else {
                     let t = `HISTORIAL: ${modelo}\n\n`;
                     datos.forEach(h => t += `• ${new Date(h.fecha).toLocaleString()}: ${h.detalle}\n`);
-                    alert(t); // El historial es mejor en alert o modal por la longitud
+                    alert(t);
                 }
             });
         }
