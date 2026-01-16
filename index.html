@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="light">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Master - Enterprise</title>
+    <title>IT Master Enterprise</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -14,12 +14,20 @@
     <style>
         :root {
             --sidebar-width: 250px;
+            --card-bg: white;
+            --body-bg: #f8f9fa;
+        }
+
+        [data-bs-theme="dark"] {
+            --card-bg: #2b3035;
+            --body-bg: #212529;
         }
 
         body {
-            background-color: #f8f9fa;
+            background-color: var(--body-bg);
             font-family: 'Segoe UI', sans-serif;
             overflow-x: hidden;
+            transition: 0.3s;
         }
 
         #overlay {
@@ -85,7 +93,8 @@
             }
 
             .col-md-4,
-            .col-md-6 {
+            .col-md-6,
+            .col-md-8 {
                 width: 100% !important;
                 margin-bottom: 15px;
             }
@@ -153,6 +162,27 @@
             border: none;
             border-radius: 15px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            background-color: var(--card-bg);
+            transition: 0.3s;
+        }
+
+        /* Activity Feed */
+        .activity-item {
+            border-left: 2px solid #e9ecef;
+            padding-left: 20px;
+            padding-bottom: 20px;
+            position: relative;
+        }
+
+        .activity-item::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            background: #0d6efd;
+            border-radius: 50%;
+            position: absolute;
+            left: -6px;
+            top: 5px;
         }
     </style>
 </head>
@@ -170,7 +200,7 @@
         </div>
         <nav class="nav flex-column">
             <a class="nav-link active" onclick="verVentana('v-inicio', this)"><i class="bi bi-house-door me-2"></i>
-                Inicio</a>
+                Dashboard</a>
             <a class="nav-link" onclick="verVentana('v-stock', this)"><i class="bi bi-box-seam me-2"></i> Inventario</a>
             <a class="nav-link" onclick="verVentana('v-operaciones', this)"><i class="bi bi-person-gear me-2"></i>
                 Asignaciones</a>
@@ -179,15 +209,19 @@
                 Importar Excel<input type="file" id="inputExcel" hidden accept=".xlsx, .xls"
                     onchange="subirExcel(this)"></label>
             <a class="nav-link text-success" href="/exportar"><i class="bi bi-file-earmark-excel me-2"></i> Exportar
-                Datos</a>
+                Todo</a>
         </nav>
+        <div class="p-4 mt-auto">
+            <button class="btn btn-outline-secondary w-100 btn-sm" onclick="toggleDarkMode()"><i
+                    class="bi bi-moon-stars me-2"></i>Tema</button>
+        </div>
     </div>
 
     <div id="content">
         <div id="stock-alerts"></div>
 
         <div id="v-inicio" class="vista activa">
-            <h2 class="mb-4">Dashboard de IT</h2>
+            <h2 class="mb-4">Visión General</h2>
             <div class="row g-4 mb-4">
                 <div class="col-md-4">
                     <div class="card card-custom p-4 bg-primary text-white">
@@ -208,17 +242,30 @@
                     </div>
                 </div>
             </div>
+
             <div class="row g-4">
-                <div class="col-md-6">
-                    <div class="card card-custom p-4 bg-white">
-                        <h6 class="text-muted mb-3">Estado</h6><canvas id="chartEstado"
-                            style="max-height: 250px;"></canvas>
+                <div class="col-md-8">
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="card card-custom p-4">
+                                <h6 class="text-muted mb-3">Estado</h6><canvas id="chartEstado"
+                                    style="max-height: 200px;"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card card-custom p-4">
+                                <h6 class="text-muted mb-3">Categorías</h6><canvas id="chartCategoria"
+                                    style="max-height: 200px;"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                <div class="col-md-6">
-                    <div class="card card-custom p-4 bg-white">
-                        <h6 class="text-muted mb-3">Categorías</h6><canvas id="chartCategoria"
-                            style="max-height: 250px;"></canvas>
+                <div class="col-md-4">
+                    <div class="card card-custom p-4 h-100">
+                        <h6 class="text-muted mb-4 fw-bold">Actividad Reciente</h6>
+                        <div id="feed-actividad" style="max-height: 300px; overflow-y: auto;">
+                            <small class="text-muted">Cargando...</small>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -227,7 +274,6 @@
         <div id="v-stock" class="vista">
             <h2 class="mb-4">Inventario</h2>
             <div class="card card-custom p-4 mb-4">
-                <h5 class="mb-3">Nuevo Equipo</h5>
                 <div class="row g-3">
                     <div class="col-md-3"><select id="cat" class="form-select border-0 bg-light p-3">
                             <option value="Laptop">Laptop 💻</option>
@@ -243,9 +289,9 @@
                                 class="spinner-border spinner-border-sm d-none"></span></button></div>
                 </div>
             </div>
-            <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
-                <table class="table align-middle">
-                    <thead>
+            <div class="table-responsive card-custom p-3 shadow-sm bg-white">
+                <table class="table align-middle mb-0">
+                    <thead class="bg-light">
                         <tr>
                             <th>Tipo</th>
                             <th>Modelo</th>
@@ -263,8 +309,8 @@
             <h2 class="mb-4">Operaciones</h2>
             <div class="mb-3"><input type="text" id="buscador" class="form-control p-3 border-0 shadow-sm rounded-4"
                     placeholder="Buscar..." onkeyup="filtrar()"></div>
-            <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
-                <table class="table align-middle">
+            <div class="table-responsive card-custom p-3 shadow-sm bg-white">
+                <table class="table align-middle mb-0">
                     <thead>
                         <tr>
                             <th>Equipo</th>
@@ -283,7 +329,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Gestión de Activo</h5><button type="button" class="btn-close"
+                    <h5 class="modal-title fw-bold">Gestión</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -303,20 +349,19 @@
                         </div>
                         <div
                             class="col-md-5 text-center d-flex flex-column align-items-center justify-content-center border-start">
-                            <label class="small text-muted mb-2 fw-bold">Etiqueta QR</label>
                             <div id="qr-code" class="p-2 bg-white border rounded mb-2"></div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-sm btn-outline-dark" onclick="imprimirQR()"><i
                                         class="bi bi-qr-code"></i> Sticker</button>
                                 <button class="btn btn-sm btn-outline-primary" onclick="imprimirFichaTecnica()"><i
-                                        class="bi bi-file-earmark-text"></i> Ficha</button>
+                                        class="bi bi-file-text"></i> Ficha</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
                     <button id="btn-confirmar-edit" onclick="confirmarEdicion()"
-                        class="btn btn-warning w-100 fw-bold"><span class="normal-text">Guardar Cambios</span><span
+                        class="btn btn-warning w-100 fw-bold"><span class="normal-text">Guardar</span><span
                             class="spinner-border spinner-border-sm d-none"></span></button>
                 </div>
             </div>
@@ -330,31 +375,27 @@
                     <h5 class="modal-title fw-bold">Asignar</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="id-asignar-temp">
-                    <input type="text" id="nombre-usuario-modal" class="form-control border-0 bg-light p-3"
-                        placeholder="Nombre completo">
-                </div>
+                <div class="modal-body"><input type="hidden" id="id-asignar-temp"><input type="text"
+                        id="nombre-usuario-modal" class="form-control border-0 bg-light p-3"
+                        placeholder="Nombre completo"></div>
                 <div class="modal-footer border-0"><button id="btn-confirmar-asignar" onclick="confirmarAsignacion()"
                         class="btn btn-primary w-100 fw-bold"><span class="normal-text">Confirmar</span><span
                             class="spinner-border spinner-border-sm d-none"></span></button></div>
             </div>
         </div>
     </div>
-
     <div class="modal fade" id="modalBorrar" tabindex="-1">
         <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4">
-                <input type="hidden" id="id-borrar-temp">
+            <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4"><input type="hidden"
+                    id="id-borrar-temp">
                 <h5 class="fw-bold text-danger">¿Archivar?</h5>
-                <p class="small text-muted">El equipo se ocultará pero no se borrará el historial.</p>
-                <button id="btn-confirmar-borrar" onclick="confirmarBorrado()" class="btn btn-danger w-100 mt-3"><span
+                <p class="small text-muted">No se borrará el historial.</p><button id="btn-confirmar-borrar"
+                    onclick="confirmarBorrado()" class="btn btn-danger w-100 mt-3"><span
                         class="normal-text">Confirmar</span><span
                         class="spinner-border spinner-border-sm d-none"></span></button>
             </div>
         </div>
     </div>
-
     <div class="modal fade" id="modalHistorial" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg rounded-4">
@@ -379,7 +420,7 @@
     <script>
         const iconos = { Laptop: '💻', Monitor: '🖥️', Periférico: '🖱️' };
         let chartEstadoInstance = null, chartCatInstance = null;
-        let globalData = []; // Para usar en reportes
+        let globalData = [];
 
         function setCargando(btnId, estado) {
             const btn = document.getElementById(btnId);
@@ -388,27 +429,28 @@
             else { btn.disabled = false; spinner.classList.add('d-none'); text.classList.remove('d-none'); }
         }
 
+        // DARK MODE
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const current = html.getAttribute('data-bs-theme');
+            html.setAttribute('data-bs-theme', current === 'dark' ? 'light' : 'dark');
+        }
+
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); const btn = document.getElementById('btn-abrir'); document.getElementById('sidebar').classList.contains('active') ? btn.classList.add('oculto') : btn.classList.remove('oculto'); }
         function verVentana(id, el) { document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa')); document.getElementById(id).classList.add('activa'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); el.classList.add('active'); if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('active')) toggleMenu(); }
         function notificar(msg, color = 'bg-dark') { const t = document.getElementById('liveToast'); document.getElementById('toast-mensaje').innerText = msg; t.className = `toast align-items-center text-white border-0 rounded-3 shadow ${color}`; new bootstrap.Toast(t).show(); }
 
-        // --- ALERTAS DE STOCK BAJO (NUEVO) ---
-        function verificarStock(data) {
-            const conteo = {};
-            data.forEach(x => { if (x.estado === 'Disponible') conteo[x.categoria] = (conteo[x.categoria] || 0) + 1 });
-
-            const alertasDiv = document.getElementById('stock-alerts');
-            alertasDiv.innerHTML = '';
-
-            // Definimos mínimo stock deseado (ej: 2 unidades)
-            for (const [cat, cant] of Object.entries(conteo)) {
-                if (cant < 2) {
-                    alertasDiv.innerHTML += `<div class="alert alert-warning alert-dismissible fade show m-4 border-0 shadow-sm" role="alert">
-                        <strong>⚠️ Stock Bajo:</strong> Quedan solo ${cant} unidades de <strong>${cat}</strong> disponibles.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        function cargarActividad() {
+            fetch('/actividad').then(r => r.json()).then(data => {
+                const feed = document.getElementById('feed-actividad');
+                feed.innerHTML = '';
+                data.forEach(item => {
+                    feed.innerHTML += `<div class="activity-item">
+                        <small class="text-muted d-block">${new Date(item.fecha).toLocaleString()}</small>
+                        <span class="fw-bold">${item.modelo}:</span> ${item.detalle}
                     </div>`;
-                }
-            }
+                });
+            });
         }
 
         function cargar() {
@@ -418,7 +460,12 @@
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
 
-                verificarStock(data);
+                // Alertas Stock
+                const conteo = {}; data.forEach(x => { if (x.estado === 'Disponible') conteo[x.categoria] = (conteo[x.categoria] || 0) + 1 });
+                const alertasDiv = document.getElementById('stock-alerts'); alertasDiv.innerHTML = '';
+                for (const [cat, cant] of Object.entries(conteo)) {
+                    if (cant < 2) alertasDiv.innerHTML += `<div class="alert alert-warning alert-dismissible fade show m-4 border-0 shadow-sm" role="alert">⚠️ <strong>${cat}:</strong> Quedan solo ${cant} unidades.<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
+                }
 
                 // Gráficos
                 const disp = data.filter(x => x.estado === 'Disponible').length, asig = data.filter(x => x.estado === 'Asignado').length;
@@ -436,121 +483,37 @@
                     tAsignar.innerHTML += `<tr><td>${a.modelo}</td><td><code>${a.serie}</code></td><td><span class="badge bg-light text-dark">${a.usuario}</span></td><td class="text-end"><button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id}, '${a.modelo}', '${a.serie}')">Asignar</button><button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button></td></tr>`;
                 });
 
-                // QR Autoload
+                // QR Search
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('buscar')) {
                     const eq = data.find(d => d.serie === params.get('buscar'));
-                    if (eq) {
-                        verVentana('v-stock', document.querySelectorAll('.nav-link')[1]);
-                        prepararEditar(eq.id, eq.categoria, eq.modelo, eq.serie);
-                        notificar("🔎 Encontrado por QR", "bg-primary");
-                        window.history.replaceState({}, document.title, window.location.pathname);
-                    }
+                    if (eq) { verVentana('v-stock', document.querySelectorAll('.nav-link')[1]); prepararEditar(eq.id, eq.categoria, eq.modelo, eq.serie); notificar("🔎 Encontrado por QR", "bg-primary"); window.history.replaceState({}, document.title, window.location.pathname); }
                 }
-            }).catch(e => {
-                if (e.toString().includes("401")) location.reload(); // Forzar login
-            });
+
+                // Cargar Feed
+                cargarActividad();
+
+            }).catch(e => { if (e.toString().includes("401")) location.reload(); });
         }
 
-        function guardar() {
-            const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
-            if (!d.modelo || !d.serie) return notificar("⚠️ Faltan datos", "bg-warning");
-            setCargando('btn-guardar', true);
-            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(r => r.json()).then(res => {
-                setCargando('btn-guardar', false);
-                if (res.status === "error") notificar(res.message, "bg-danger");
-                else { notificar(res.message || "✅ Creado", "bg-success"); document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar(); }
-            });
-        }
-
-        function prepararEditar(id, cat, mod, ser) {
-            document.getElementById('edit-id').value = id; document.getElementById('edit-cat').value = cat; document.getElementById('edit-mod').value = mod; document.getElementById('edit-ser').value = ser;
-            const qrC = document.getElementById("qr-code"); qrC.innerHTML = "";
-            new QRCode(qrC, { text: `${window.location.origin}/?buscar=${ser}`, width: 100, height: 100 });
-            new bootstrap.Modal(document.getElementById('modalEditar')).show();
-        }
-
-        function confirmarEdicion() {
-            const id = document.getElementById('edit-id').value, d = { categoria: document.getElementById('edit-cat').value, modelo: document.getElementById('edit-mod').value, serie: document.getElementById('edit-ser').value };
-            setCargando('btn-confirmar-edit', true);
-            fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(r => r.json()).then(res => {
-                setCargando('btn-confirmar-edit', false);
-                if (res.status === "success") { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("✅ Actualizado", "bg-warning"); cargar(); }
-                else notificar(res.message, "bg-danger");
-            });
-        }
-
-        // --- REPORTES PDF ---
-        function imprimirQR() {
-            const c = document.getElementById('qr-code').innerHTML, s = document.getElementById('edit-ser').value, m = document.getElementById('edit-mod').value;
-            const w = window.open('', '', 'height=600,width=600');
-            w.document.write(`<html><head><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh}.tag{border:3px solid black;padding:20px;text-align:center;border-radius:10px;width:300px}h3{border-bottom:2px solid black;margin-bottom:10px}.qr{display:flex;justify-content:center;margin:15px}</style></head><body><div class="tag"><h3>PROPIEDAD IT MASTER</h3><div class="qr">${c}</div><p><strong>S/N: ${s}</strong><br><small>${m}</small></p></div></body></html>`);
-            w.document.close(); setTimeout(() => { w.print(); w.close() }, 500);
-        }
-
-        function imprimirFichaTecnica() {
-            const id = document.getElementById('edit-id').value;
-            const mod = document.getElementById('edit-mod').value;
-            const ser = document.getElementById('edit-ser').value;
-
-            fetch(`/historial/${id}`).then(r => r.json()).then(hist => {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-
-                doc.setFontSize(18); doc.text("FICHA TÉCNICA DEL ACTIVO", 105, 20, null, null, "center");
-                doc.setFontSize(12); doc.text(`Modelo: ${mod}`, 20, 40); doc.text(`Serie: ${ser}`, 20, 50);
-                doc.line(20, 55, 190, 55);
-                doc.text("Historial de Movimientos:", 20, 65);
-
-                let y = 75;
-                hist.forEach(h => {
-                    doc.setFontSize(10);
-                    doc.text(`${new Date(h.fecha).toLocaleString()} - ${h.detalle}`, 20, y);
-                    y += 10;
-                });
-                doc.save(`Ficha_${ser}.pdf`);
-            });
-        }
+        // Acciones CRUD
+        function guardar() { const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value }; if (!d.modelo || !d.serie) return notificar("⚠️ Faltan datos", "bg-warning"); setCargando('btn-guardar', true); fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(r => r.json()).then(res => { setCargando('btn-guardar', false); if (res.status === "error") notificar(res.message, "bg-danger"); else { notificar(res.message || "✅ Creado", "bg-success"); document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar(); } }); }
+        function prepararEditar(id, cat, mod, ser) { document.getElementById('edit-id').value = id; document.getElementById('edit-cat').value = cat; document.getElementById('edit-mod').value = mod; document.getElementById('edit-ser').value = ser; const qrC = document.getElementById("qr-code"); qrC.innerHTML = ""; new QRCode(qrC, { text: `${window.location.origin}/?buscar=${ser}`, width: 100, height: 100 }); new bootstrap.Modal(document.getElementById('modalEditar')).show(); }
+        function confirmarEdicion() { const id = document.getElementById('edit-id').value, d = { categoria: document.getElementById('edit-cat').value, modelo: document.getElementById('edit-mod').value, serie: document.getElementById('edit-ser').value }; setCargando('btn-confirmar-edit', true); fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(r => r.json()).then(res => { setCargando('btn-confirmar-edit', false); if (res.status === "success") { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("✅ Actualizado", "bg-warning"); cargar(); } else notificar(res.message, "bg-danger"); }); }
 
         function prepararAsignar(id, mod, ser) { window.tempModelo = mod; window.tempSerie = ser; document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
-        async function confirmarAsignacion() {
-            const id = document.getElementById('id-asignar-temp').value, u = document.getElementById('nombre-usuario-modal').value;
-            if (!u) return notificar("⚠️ Falta nombre", "bg-warning");
-            setCargando('btn-confirmar-asignar', true);
-            const res = await fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) });
-            setCargando('btn-confirmar-asignar', false);
-            if (res.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("👤 Asignado", "bg-primary"); cargar();
-                if (confirm("¿Descargar Acta de Entrega?")) generarPDFEntrega(u);
-            }
-        }
-
-        function generarPDFEntrega(u) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFontSize(22); doc.text("ACTA DE ENTREGA", 105, 20, null, null, "center");
-            doc.setFontSize(12); doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 40);
-            doc.rect(20, 50, 170, 30); doc.text(`Responsable: ${u}`, 25, 60); doc.text(`Equipo: ${window.tempModelo || ''} (S/N: ${window.tempSerie || ''})`, 25, 70);
-            doc.text("Se hace entrega del equipo en buen estado.", 20, 100);
-            doc.line(40, 150, 90, 150); doc.text("Firma Usuario", 40, 155);
-            doc.save(`Acta_${u}.pdf`);
-        }
-
+        async function confirmarAsignacion() { const id = document.getElementById('id-asignar-temp').value, u = document.getElementById('nombre-usuario-modal').value; if (!u) return notificar("⚠️ Falta nombre", "bg-warning"); setCargando('btn-confirmar-asignar', true); const res = await fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) }); setCargando('btn-confirmar-asignar', false); if (res.ok) { bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("👤 Asignado", "bg-primary"); cargar(); if (confirm("¿Descargar Acta de Entrega?")) generarPDFEntrega(u); } }
         function prepararBorrar(id) { document.getElementById('id-borrar-temp').value = id; new bootstrap.Modal(document.getElementById('modalBorrar')).show(); }
-        function confirmarBorrado() {
-            const id = document.getElementById('id-borrar-temp').value; setCargando('btn-confirmar-borrar', true);
-            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => { setCargando('btn-confirmar-borrar', false); bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("🗑️ Archivado", "bg-dark"); cargar(); });
-        }
-        function verHistorial(id, mod) { fetch(`/historial/${id}`).then(r => r.json()).then(data => { document.getElementById('tituloHistorial').innerText = `Historial: ${mod}`; let html = '<ul class="list-group list-group-flush">'; data.forEach(x => html += `<li class="list-group-item border-0 border-bottom py-3"><div class="d-flex justify-content-between"><span class="fw-bold">${x.detalle}</span><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small></div></li>`); document.getElementById('cuerpoHistorial').innerHTML = html + '</ul>'; new bootstrap.Modal(document.getElementById('modalHistorial')).show(); }); }
-        function subirExcel(input) {
-            if (!input.files[0]) return;
-            let fd = new FormData(); fd.append("file", input.files[0]);
-            notificar("⏳ Subiendo...", "bg-warning");
-            fetch('/importar', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
-                if (res.status === 'success') { notificar(res.message, "bg-success"); cargar(); } else notificar(res.message, "bg-danger");
-                input.value = '';
-            });
-        }
+        function confirmarBorrado() { const id = document.getElementById('id-borrar-temp').value; setCargando('btn-confirmar-borrar', true); fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => { setCargando('btn-confirmar-borrar', false); bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("🗑️ Archivado", "bg-dark"); cargar(); }); }
+
+        function subirExcel(input) { if (!input.files[0]) return; let fd = new FormData(); fd.append("file", input.files[0]); notificar("⏳ Procesando...", "bg-warning"); fetch('/importar', { method: 'POST', body: fd }).then(r => r.json()).then(res => { if (res.status === 'success') { notificar(res.message, "bg-success"); cargar(); } else notificar(res.message, "bg-danger"); input.value = ''; }); }
+
+        // Reportes
+        function imprimirQR() { const c = document.getElementById('qr-code').innerHTML, s = document.getElementById('edit-ser').value, m = document.getElementById('edit-mod').value; const w = window.open('', '', 'height=600,width=600'); w.document.write(`<html><head><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh}.tag{border:3px solid black;padding:20px;text-align:center;border-radius:10px;width:300px}h3{border-bottom:2px solid black;margin-bottom:10px}.qr{display:flex;justify-content:center;margin:15px}</style></head><body><div class="tag"><h3>PROPIEDAD IT MASTER</h3><div class="qr">${c}</div><p><strong>S/N: ${s}</strong><br><small>${m}</small></p></div></body></html>`); w.document.close(); setTimeout(() => { w.print(); w.close() }, 500); }
+        function generarPDFEntrega(u) { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.setFontSize(22); doc.text("ACTA DE ENTREGA", 105, 20, null, null, "center"); doc.setFontSize(12); doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 40); doc.rect(20, 50, 170, 30); doc.text(`Responsable: ${u}`, 25, 60); doc.text(`Equipo: ${window.tempModelo || ''} (S/N: ${window.tempSerie || ''})`, 25, 70); doc.text("Se hace entrega del equipo en buen estado.", 20, 100); doc.line(40, 150, 90, 150); doc.text("Firma Usuario", 40, 155); doc.save(`Acta_${u}.pdf`); }
+        function imprimirFichaTecnica() { const id = document.getElementById('edit-id').value, mod = document.getElementById('edit-mod').value, ser = document.getElementById('edit-ser').value; fetch(`/historial/${id}`).then(r => r.json()).then(hist => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.setFontSize(18); doc.text("FICHA TÉCNICA", 105, 20, null, null, "center"); doc.setFontSize(12); doc.text(`Modelo: ${mod}`, 20, 40); doc.text(`Serie: ${ser}`, 20, 50); doc.line(20, 55, 190, 55); doc.text("Historial:", 20, 65); let y = 75; hist.forEach(h => { doc.setFontSize(10); doc.text(`${new Date(h.fecha).toLocaleString()} - ${h.detalle}`, 20, y); y += 10; }); doc.save(`Ficha_${ser}.pdf`); }); }
+
+        function verHistorial(id, mod) { fetch(`/historial/${id}`).then(r => r.json()).then(data => { document.getElementById('tituloHistorial').innerText = `Historial: ${mod}`; let html = '<ul class="list-group list-group-flush">'; data.forEach(x => html += `<li class="list-group-item border-0 border-bottom py-3 bg-transparent"><div class="d-flex justify-content-between"><span class="fw-bold">${x.detalle}</span><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small></div></li>`); document.getElementById('cuerpoHistorial').innerHTML = html + '</ul>'; new bootstrap.Modal(document.getElementById('modalHistorial')).show(); }); }
         function filtrar() { const v = document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none'); }
         cargar();
     </script>

@@ -14,9 +14,8 @@ from io import BytesIO
 app = FastAPI()
 security = HTTPBasic()
 
-# --- SEGURIDAD (Login) ---
+# --- SEGURIDAD ---
 def check_credentials(credentials: HTTPBasicCredentials = Depends(security)):
-    # CAMBIA ESTO EN PRODUCCIÓN
     correct_username = secrets.compare_digest(credentials.username, "admin")
     correct_password = secrets.compare_digest(credentials.password, "supersecreto123")
     if not (correct_username and correct_password):
@@ -57,17 +56,16 @@ def inicializar_db():
     conn = get_conn()
     try:
         cur = conn.cursor()
-        # Tabla Activos
         cur.execute('''
             CREATE TABLE IF NOT EXISTS activos (
                 id SERIAL PRIMARY KEY,
                 categoria TEXT, modelo TEXT, serie TEXT UNIQUE,
-                estado TEXT DEFAULT 'Disponible', usuario TEXT DEFAULT 'N/A'
+                estado TEXT DEFAULT 'Disponible', usuario TEXT DEFAULT 'N/A',
+                activo BOOLEAN DEFAULT TRUE
             )''')
-        # MIGRACIÓN AUTOMÁTICA: Añadimos columna 'activo' si no existe (Soft Delete)
+        # Aseguramos columna 'activo' para soft delete
         cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE")
         
-        # Tabla Historial
         cur.execute('''
             CREATE TABLE IF NOT EXISTS historial (
                 id SERIAL PRIMARY KEY,
@@ -92,8 +90,24 @@ def leer_activos():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        # SOFT DELETE: Solo mostramos los activos verdaderos
         cur.execute("SELECT * FROM activos WHERE activo = TRUE ORDER BY id DESC")
+        return cur.fetchall()
+    finally:
+        cur.close()
+        release_conn(conn)
+
+@app.get("/actividad", dependencies=[Depends(check_credentials)])
+def actividad_reciente():
+    """Devuelve los últimos 10 movimientos globales para el Dashboard"""
+    conn = get_conn()
+    try:
+        cur = conn.cursor(cursor_factory=RealDictCursor)
+        cur.execute("""
+            SELECT h.detalle, h.fecha, a.modelo 
+            FROM historial h 
+            JOIN activos a ON h.activo_id = a.id 
+            ORDER BY h.fecha DESC LIMIT 10
+        """)
         return cur.fetchall()
     finally:
         cur.close()
@@ -104,17 +118,16 @@ def crear(activo: ActivoSchema):
     conn = get_conn()
     try:
         cur = conn.cursor()
-        # LÓGICA DE RESURRECCIÓN
         cur.execute("SELECT id, activo FROM activos WHERE serie = %s", (activo.serie,))
         existe = cur.fetchone()
         
         if existe:
-            if existe[1] is True: # Existe y está activo
+            if existe[1] is True:
                 return {"status": "error", "message": "Serie duplicada"}
-            else: # Existe pero estaba borrado -> LO REVIVIMOS
+            else: # Reactivar equipo borrado
                 cur.execute("UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, estado='Disponible', usuario='N/A' WHERE id=%s", 
                            (activo.categoria, activo.modelo, existe[0]))
-                cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, 'Equipo recuperado del inventario eliminado')", (existe[0],))
+                cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, 'Equipo reactivado')", (existe[0],))
                 conn.commit()
                 return {"status": "success", "message": "Equipo reactivado"}
 
@@ -159,7 +172,6 @@ def eliminar(id: int):
     conn = get_conn()
     try:
         cur = conn.cursor()
-        # SOFT DELETE: No borramos, solo ocultamos
         cur.execute("UPDATE activos SET activo = FALSE WHERE id = %s", (id,))
         conn.commit()
         return {"status": "success"}
@@ -194,21 +206,37 @@ def importar_excel(file: UploadFile = File(...)):
     conn = get_conn()
     try:
         contents = file.file.read()
-        df = pd.read_excel(BytesIO(contents))
+        # Forzamos engine openpyxl para evitar errores de compatibilidad
+        df = pd.read_excel(BytesIO(contents), engine='openpyxl')
+        
+        # Validar columnas mínimas
+        required = {'categoria', 'modelo', 'serie'}
+        if not required.issubset(df.columns):
+            return {"status": "error", "message": f"El Excel debe tener columnas: {required}"}
+
         cur = conn.cursor()
         contador = 0
+        errores = 0
+        
         for _, row in df.iterrows():
-            # Intentamos insertar ignorando duplicados básicos por ahora
             try:
-                cur.execute("INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)", (row['categoria'], row['modelo'], str(row['serie'])))
-                contador += 1
+                # Verificar si existe (incluyendo borrados)
+                cur.execute("SELECT id FROM activos WHERE serie = %s", (str(row['serie']),))
+                if not cur.fetchone():
+                    cur.execute(
+                        "INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)",
+                        (row['categoria'], row['modelo'], str(row['serie']))
+                    )
+                    contador += 1
             except:
-                conn.rollback() # Ignoramos errores individuales en importación masiva
+                errores += 1
+                conn.rollback() # Rollback parcial si falla una fila
                 continue
+                
         conn.commit()
-        return {"status": "success", "message": f"Importados {contador} equipos"}
+        return {"status": "success", "message": f"Importados: {contador}. Errores/Duplicados: {errores}"}
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": f"Error procesando archivo: {str(e)}"}
     finally:
         release_conn(conn)
 
