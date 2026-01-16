@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Admin Panel - Master</title>
+    <title>IT Master - Enterprise</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -22,7 +22,6 @@
             overflow-x: hidden;
         }
 
-        /* Sidebar & Overlay */
         #overlay {
             position: fixed;
             top: 0;
@@ -97,7 +96,6 @@
             }
         }
 
-        /* Botón Flotante */
         #btn-abrir {
             position: fixed;
             top: 15px;
@@ -114,7 +112,6 @@
             transform: translateX(-20px);
         }
 
-        /* Estilos Generales */
         .nav-link {
             color: rgba(255, 255, 255, 0.7);
             padding: 12px 20px;
@@ -157,12 +154,6 @@
             border-radius: 15px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
-
-        .spinner-border-sm {
-            width: 1rem;
-            height: 1rem;
-            border-width: 0.15em;
-        }
     </style>
 </head>
 
@@ -184,12 +175,17 @@
             <a class="nav-link" onclick="verVentana('v-operaciones', this)"><i class="bi bi-person-gear me-2"></i>
                 Asignaciones</a>
             <hr class="mx-3 opacity-25">
+            <label class="nav-link text-primary" style="cursor: pointer;"><i class="bi bi-cloud-upload me-2"></i>
+                Importar Excel<input type="file" id="inputExcel" hidden accept=".xlsx, .xls"
+                    onchange="subirExcel(this)"></label>
             <a class="nav-link text-success" href="/exportar"><i class="bi bi-file-earmark-excel me-2"></i> Exportar
                 Datos</a>
         </nav>
     </div>
 
     <div id="content">
+        <div id="stock-alerts"></div>
+
         <div id="v-inicio" class="vista activa">
             <h2 class="mb-4">Dashboard de IT</h2>
             <div class="row g-4 mb-4">
@@ -215,23 +211,23 @@
             <div class="row g-4">
                 <div class="col-md-6">
                     <div class="card card-custom p-4 bg-white">
-                        <h6 class="text-muted mb-3">Distribución por Estado</h6>
-                        <canvas id="chartEstado" style="max-height: 250px;"></canvas>
+                        <h6 class="text-muted mb-3">Estado</h6><canvas id="chartEstado"
+                            style="max-height: 250px;"></canvas>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="card card-custom p-4 bg-white">
-                        <h6 class="text-muted mb-3">Inventario por Categoría</h6>
-                        <canvas id="chartCategoria" style="max-height: 250px;"></canvas>
+                        <h6 class="text-muted mb-3">Categorías</h6><canvas id="chartCategoria"
+                            style="max-height: 250px;"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
         <div id="v-stock" class="vista">
-            <h2 class="mb-4">Gestión de Inventario</h2>
+            <h2 class="mb-4">Inventario</h2>
             <div class="card card-custom p-4 mb-4">
-                <h5 class="mb-3">Registrar Nuevo Equipo</h5>
+                <h5 class="mb-3">Nuevo Equipo</h5>
                 <div class="row g-3">
                     <div class="col-md-3"><select id="cat" class="form-select border-0 bg-light p-3">
                             <option value="Laptop">Laptop 💻</option>
@@ -242,12 +238,9 @@
                             placeholder="Modelo"></div>
                     <div class="col-md-3"><input type="text" id="ser" class="form-control border-0 bg-light p-3"
                             placeholder="Serie"></div>
-                    <div class="col-md-3">
-                        <button id="btn-guardar" onclick="guardar()" class="btn btn-dark w-100 p-3 fw-bold">
-                            <span class="normal-text">Añadir</span><span
-                                class="spinner-border spinner-border-sm d-none"></span>
-                        </button>
-                    </div>
+                    <div class="col-md-3"><button id="btn-guardar" onclick="guardar()"
+                            class="btn btn-dark w-100 p-3 fw-bold"><span class="normal-text">Añadir</span><span
+                                class="spinner-border spinner-border-sm d-none"></span></button></div>
                 </div>
             </div>
             <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
@@ -267,9 +260,9 @@
         </div>
 
         <div id="v-operaciones" class="vista">
-            <h2 class="mb-4">Panel de Operaciones</h2>
+            <h2 class="mb-4">Operaciones</h2>
             <div class="mb-3"><input type="text" id="buscador" class="form-control p-3 border-0 shadow-sm rounded-4"
-                    placeholder="Buscar equipo, serie o usuario..." onkeyup="filtrar()"></div>
+                    placeholder="Buscar..." onkeyup="filtrar()"></div>
             <div class="table-responsive bg-white p-3 rounded-4 shadow-sm">
                 <table class="table align-middle">
                     <thead>
@@ -290,40 +283,41 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Editar y Etiquetar</h5><button type="button" class="btn-close"
+                    <h5 class="modal-title fw-bold">Gestión de Activo</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-7">
                             <input type="hidden" id="edit-id">
-                            <label class="small text-muted fw-bold">Categoría</label>
-                            <select id="edit-cat" class="form-select mb-3 bg-light border-0">
+                            <label class="small text-muted fw-bold">Categoría</label><select id="edit-cat"
+                                class="form-select mb-3 bg-light border-0">
                                 <option value="Laptop">Laptop</option>
                                 <option value="Monitor">Monitor</option>
                                 <option value="Periférico">Periférico</option>
                             </select>
-                            <label class="small text-muted fw-bold">Modelo</label>
-                            <input type="text" id="edit-mod" class="form-control mb-3 bg-light border-0">
-                            <label class="small text-muted fw-bold">Número de Serie</label>
-                            <input type="text" id="edit-ser" class="form-control mb-3 bg-light border-0">
+                            <label class="small text-muted fw-bold">Modelo</label><input type="text" id="edit-mod"
+                                class="form-control mb-3 bg-light border-0">
+                            <label class="small text-muted fw-bold">Serie</label><input type="text" id="edit-ser"
+                                class="form-control mb-3 bg-light border-0">
                         </div>
                         <div
                             class="col-md-5 text-center d-flex flex-column align-items-center justify-content-center border-start">
                             <label class="small text-muted mb-2 fw-bold">Etiqueta QR</label>
                             <div id="qr-code" class="p-2 bg-white border rounded mb-2"></div>
-                            <small class="text-muted d-block mb-2" style="font-size:0.7rem">Escanea para ver
-                                ficha</small>
-                            <button class="btn btn-sm btn-outline-dark" onclick="imprimirQR()"><i
-                                    class="bi bi-printer me-1"></i> Imprimir</button>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-dark" onclick="imprimirQR()"><i
+                                        class="bi bi-qr-code"></i> Sticker</button>
+                                <button class="btn btn-sm btn-outline-primary" onclick="imprimirFichaTecnica()"><i
+                                        class="bi bi-file-earmark-text"></i> Ficha</button>
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0">
-                    <button id="btn-confirmar-edit" onclick="confirmarEdicion()" class="btn btn-warning w-100 fw-bold">
-                        <span class="normal-text">Guardar Cambios</span><span
-                            class="spinner-border spinner-border-sm d-none"></span>
-                    </button>
+                    <button id="btn-confirmar-edit" onclick="confirmarEdicion()"
+                        class="btn btn-warning w-100 fw-bold"><span class="normal-text">Guardar Cambios</span><span
+                            class="spinner-border spinner-border-sm d-none"></span></button>
                 </div>
             </div>
         </div>
@@ -333,7 +327,7 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Asignar Usuario</h5><button type="button" class="btn-close"
+                    <h5 class="modal-title fw-bold">Asignar</h5><button type="button" class="btn-close"
                         data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -341,11 +335,9 @@
                     <input type="text" id="nombre-usuario-modal" class="form-control border-0 bg-light p-3"
                         placeholder="Nombre completo">
                 </div>
-                <div class="modal-footer border-0">
-                    <button id="btn-confirmar-asignar" onclick="confirmarAsignacion()"
+                <div class="modal-footer border-0"><button id="btn-confirmar-asignar" onclick="confirmarAsignacion()"
                         class="btn btn-primary w-100 fw-bold"><span class="normal-text">Confirmar</span><span
-                            class="spinner-border spinner-border-sm d-none"></span></button>
-                </div>
+                            class="spinner-border spinner-border-sm d-none"></span></button></div>
             </div>
         </div>
     </div>
@@ -354,9 +346,10 @@
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4">
                 <input type="hidden" id="id-borrar-temp">
-                <h5 class="fw-bold text-danger">¿Eliminar?</h5>
+                <h5 class="fw-bold text-danger">¿Archivar?</h5>
+                <p class="small text-muted">El equipo se ocultará pero no se borrará el historial.</p>
                 <button id="btn-confirmar-borrar" onclick="confirmarBorrado()" class="btn btn-danger w-100 mt-3"><span
-                        class="normal-text">Sí, eliminar</span><span
+                        class="normal-text">Confirmar</span><span
                         class="spinner-border spinner-border-sm d-none"></span></button>
             </div>
         </div>
@@ -373,7 +366,6 @@
             </div>
         </div>
     </div>
-
     <div class="toast-container position-fixed bottom-0 end-0 p-3">
         <div id="liveToast" class="toast align-items-center text-white border-0 rounded-3 shadow" role="alert">
             <div class="d-flex">
@@ -386,354 +378,180 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const iconos = { Laptop: '💻', Monitor: '🖥️', Periférico: '🖱️' };
-        let chartEstadoInstance = null;
-        let chartCatInstance = null;
+        let chartEstadoInstance = null, chartCatInstance = null;
+        let globalData = []; // Para usar en reportes
 
-        // --- UX: SPINNER DE CARGA ---
         function setCargando(btnId, estado) {
             const btn = document.getElementById(btnId);
-            const spinner = btn.querySelector('.spinner-border');
-            const text = btn.querySelector('.normal-text');
+            const spinner = btn.querySelector('.spinner-border'), text = btn.querySelector('.normal-text');
             if (estado) { btn.disabled = true; spinner.classList.remove('d-none'); text.classList.add('d-none'); }
             else { btn.disabled = false; spinner.classList.add('d-none'); text.classList.remove('d-none'); }
         }
 
-        // --- NAVEGACIÓN ---
-        function toggleMenu() {
-            document.getElementById('sidebar').classList.toggle('active');
-            document.getElementById('overlay').classList.toggle('active');
-            const btn = document.getElementById('btn-abrir');
-            document.getElementById('sidebar').classList.contains('active') ? btn.classList.add('oculto') : btn.classList.remove('oculto');
-        }
+        function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); const btn = document.getElementById('btn-abrir'); document.getElementById('sidebar').classList.contains('active') ? btn.classList.add('oculto') : btn.classList.remove('oculto'); }
+        function verVentana(id, el) { document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa')); document.getElementById(id).classList.add('activa'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); el.classList.add('active'); if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('active')) toggleMenu(); }
+        function notificar(msg, color = 'bg-dark') { const t = document.getElementById('liveToast'); document.getElementById('toast-mensaje').innerText = msg; t.className = `toast align-items-center text-white border-0 rounded-3 shadow ${color}`; new bootstrap.Toast(t).show(); }
 
-        // --- NUEVA FUNCIÓN CON GENERACIÓN DE PDF ---
-        async function confirmarAsignacion() {
-            const id = document.getElementById('id-asignar-temp').value;
-            const u = document.getElementById('nombre-usuario-modal').value;
+        // --- ALERTAS DE STOCK BAJO (NUEVO) ---
+        function verificarStock(data) {
+            const conteo = {};
+            data.forEach(x => { if (x.estado === 'Disponible') conteo[x.categoria] = (conteo[x.categoria] || 0) + 1 });
 
-            // Necesitamos recuperar el modelo y serie para ponerlos en el PDF. 
-            // Como el modal solo tiene el ID, los buscamos "al vuelo" en la tabla (truco rápido) o los pedimos al backend.
-            // Para simplificar, asumiremos que el backend nos responde bien, pero aquí usaremos un truco visual:
-            // Al asignar, guardaremos temporalmente los datos del equipo en variables globales cuando abrimos el modal.
+            const alertasDiv = document.getElementById('stock-alerts');
+            alertasDiv.innerHTML = '';
 
-            if (!u) return notificar("⚠️ Falta nombre del usuario", "bg-warning");
-
-            setCargando('btn-confirmar-asignar', true);
-
-            // 1. Guardar en Base de Datos
-            const response = await fetch('/asignar', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, usuario: u })
-            });
-
-            setCargando('btn-confirmar-asignar', false);
-
-            if (response.ok) {
-                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
-                notificar("👤 Asignado correctamente", "bg-primary");
-                cargar(); // Recargar tabla
-
-                // 2. PREGUNTAR SI GENERAR PDF
-                if (confirm("¿Quieres descargar el Acta de Entrega en PDF?")) {
-                    generarPDFEntrega(u);
+            // Definimos mínimo stock deseado (ej: 2 unidades)
+            for (const [cat, cant] of Object.entries(conteo)) {
+                if (cant < 2) {
+                    alertasDiv.innerHTML += `<div class="alert alert-warning alert-dismissible fade show m-4 border-0 shadow-sm" role="alert">
+                        <strong>⚠️ Stock Bajo:</strong> Quedan solo ${cant} unidades de <strong>${cat}</strong> disponibles.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>`;
                 }
-            } else {
-                notificar("❌ Error al asignar", "bg-danger");
             }
-        }
-
-        // --- FUNCIÓN GENERADORA DE PDF (NUEVA) ---
-        function generarPDFEntrega(usuario) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            const fecha = new Date().toLocaleDateString();
-
-            // Intentamos recuperar datos del equipo seleccionado (del DOM o variables)
-            // Nota: Para que esto sea perfecto, deberíamos haber pasado modelo/serie a 'prepararAsignar'.
-            // Por ahora pondremos un placeholder o necesitamos ajustar 'prepararAsignar' (ver abajo).
-            const modelo = window.tempModelo || "Equipo IT";
-            const serie = window.tempSerie || "S/N Desconocido";
-
-            // DISEÑO DEL PDF
-            doc.setFontSize(22);
-            doc.text("ACTA DE ENTREGA DE EQUIPO", 105, 20, null, null, "center");
-
-            doc.setFontSize(12);
-            doc.text("Departamento de IT - IT MASTER", 20, 30);
-            doc.line(20, 32, 190, 32); // Línea horizontal
-
-            doc.setFontSize(10);
-            doc.text(`Fecha de entrega: ${fecha}`, 20, 45);
-
-            doc.setFontSize(12);
-            doc.text("Por medio de la presente, se hace entrega del siguiente activo:", 20, 60);
-
-            // Caja de datos del equipo
-            doc.setDrawColor(0);
-            doc.setFillColor(240, 240, 240);
-            doc.rect(20, 70, 170, 40, 'FD');
-
-            doc.setFont("helvetica", "bold");
-            doc.text(`Usuario Responsable: ${usuario}`, 30, 80);
-            doc.text(`Modelo del Equipo: ${modelo}`, 30, 90);
-            doc.text(`Número de Serie: ${serie}`, 30, 100);
-
-            doc.setFont("helvetica", "normal");
-            doc.text("El usuario se compromete a cuidar el equipo y notificar cualquier", 20, 125);
-            doc.text("incidencia al departamento de soporte inmediatamente.", 20, 130);
-
-            // Línea de firma
-            doc.line(40, 180, 100, 180);
-            doc.text("Firma del Usuario", 40, 185);
-
-            doc.line(120, 180, 180, 180);
-            doc.text("Firma IT Manager", 120, 185);
-
-            // Guardar
-            doc.save(`Acta_Entrega_${usuario}_${fecha}.pdf`);
-        }
-
-        function verVentana(id, el) {
-            document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa'));
-            document.getElementById(id).classList.add('activa');
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            el.classList.add('active');
-            if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('active')) toggleMenu();
-        }
-
-        // --- GRÁFICOS ---
-        function actualizarGraficos(data) {
-            const disp = data.filter(x => x.estado === 'Disponible').length;
-            const asig = data.filter(x => x.estado === 'Asignado').length;
-            const cats = {};
-            data.forEach(x => { cats[x.categoria] = (cats[x.categoria] || 0) + 1 });
-
-            if (chartEstadoInstance) chartEstadoInstance.destroy();
-            chartEstadoInstance = new Chart(document.getElementById('chartEstado'), {
-                type: 'doughnut',
-                data: { labels: ['Disponible', 'Asignado'], datasets: [{ data: [disp, asig], backgroundColor: ['#198754', '#0dcaf0'] }] }
-            });
-
-            if (chartCatInstance) chartCatInstance.destroy();
-            chartCatInstance = new Chart(document.getElementById('chartCategoria'), {
-                type: 'bar',
-                data: { labels: Object.keys(cats), datasets: [{ label: 'Cantidad', data: Object.values(cats), backgroundColor: '#212529', borderRadius: 5 }] },
-                options: { scales: { y: { beginAtZero: true } } }
-            });
-        }
-
-        // --- LÓGICA DE DATOS ---
-        function notificar(msg, color = 'bg-dark') {
-            const t = document.getElementById('liveToast');
-            document.getElementById('toast-mensaje').innerText = msg;
-            t.className = `toast align-items-center text-white border-0 rounded-3 shadow ${color}`;
-            new bootstrap.Toast(t).show();
         }
 
         function cargar() {
             fetch('/activos').then(r => r.json()).then(data => {
-                // 1. Actualizar contadores y gráficos (Tu código normal)
+                globalData = data;
                 document.getElementById('total').innerText = data.length;
                 document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
                 document.getElementById('uso').innerText = data.filter(x => x.estado === 'Asignado').length;
-                actualizarGraficos(data);
 
-                // 2. Renderizar tablas (Tu código normal)
-                const tStock = document.getElementById('lista-stock');
-                const tAsignar = document.getElementById('lista-asignar');
+                verificarStock(data);
+
+                // Gráficos
+                const disp = data.filter(x => x.estado === 'Disponible').length, asig = data.filter(x => x.estado === 'Asignado').length;
+                const cats = {}; data.forEach(x => { cats[x.categoria] = (cats[x.categoria] || 0) + 1 });
+                if (chartEstadoInstance) chartEstadoInstance.destroy();
+                chartEstadoInstance = new Chart(document.getElementById('chartEstado'), { type: 'doughnut', data: { labels: ['Disponible', 'Asignado'], datasets: [{ data: [disp, asig], backgroundColor: ['#198754', '#0dcaf0'] }] } });
+                if (chartCatInstance) chartCatInstance.destroy();
+                chartCatInstance = new Chart(document.getElementById('chartCategoria'), { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: 'Cantidad', data: Object.values(cats), backgroundColor: '#212529', borderRadius: 5 }] }, options: { scales: { y: { beginAtZero: true } } } });
+
+                // Tablas
+                const tStock = document.getElementById('lista-stock'), tAsignar = document.getElementById('lista-asignar');
                 tStock.innerHTML = ''; tAsignar.innerHTML = '';
-
                 data.forEach(a => {
-                    // ... (Tu código de generación de filas sigue igual) ...
-                    tStock.innerHTML += `<tr>
-                <td>${iconos[a.categoria] || '📦'} ${a.categoria}</td>
-                <td>${a.modelo}</td>
-                <td><code>${a.serie}</code></td>
-                <td><span class="badge ${a.estado === 'Disponible' ? 'bg-success' : 'bg-info'}">${a.estado}</span></td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-warning me-1" onclick="prepararEditar(${a.id}, '${a.categoria}', '${a.modelo}', '${a.serie}')"><i class="bi bi-pencil"></i></button>
-                    <button class="btn btn-sm btn-outline-danger" onclick="prepararBorrar(${a.id})"><i class="bi bi-trash"></i></button>
-                </td>
-            </tr>`;
-                    tAsignar.innerHTML += `<tr>
-                <td>${a.modelo}</td>
-                <td><code>${a.serie}</code></td>
-                <td><span class="badge bg-light text-dark">${a.usuario}</span></td>
-                <td class="text-end">
-                    <button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id})">Asignar</button>
-                    <button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button>
-                </td>
-            </tr>`;
+                    tStock.innerHTML += `<tr><td>${iconos[a.categoria] || '📦'} ${a.categoria}</td><td>${a.modelo}</td><td><code>${a.serie}</code></td><td><span class="badge ${a.estado === 'Disponible' ? 'bg-success' : 'bg-info'}">${a.estado}</span></td><td class="text-end"><button class="btn btn-sm btn-warning me-1" onclick="prepararEditar(${a.id}, '${a.categoria}', '${a.modelo}', '${a.serie}')"><i class="bi bi-pencil"></i></button><button class="btn btn-sm btn-outline-danger" onclick="prepararBorrar(${a.id})"><i class="bi bi-trash"></i></button></td></tr>`;
+                    tAsignar.innerHTML += `<tr><td>${a.modelo}</td><td><code>${a.serie}</code></td><td><span class="badge bg-light text-dark">${a.usuario}</span></td><td class="text-end"><button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id}, '${a.modelo}', '${a.serie}')">Asignar</button><button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button></td></tr>`;
                 });
 
-                // --- 3. LA MAGIA DEL QR (NUEVO) ---
-                // Leemos si hay un parámetro 'buscar' en la URL
+                // QR Autoload
                 const params = new URLSearchParams(window.location.search);
-                const serieQR = params.get('buscar');
-
-                if (serieQR) {
-                    // Buscamos el equipo con esa serie en los datos que acabamos de descargar
-                    const equipoEncontrado = data.find(d => d.serie === serieQR);
-
-                    if (equipoEncontrado) {
-                        // Si existe, abrimos la pestaña de Inventario
+                if (params.get('buscar')) {
+                    const eq = data.find(d => d.serie === params.get('buscar'));
+                    if (eq) {
                         verVentana('v-stock', document.querySelectorAll('.nav-link')[1]);
-
-                        // Y abrimos automáticamente su ficha de edición/visualización
-                        prepararEditar(
-                            equipoEncontrado.id,
-                            equipoEncontrado.categoria,
-                            equipoEncontrado.modelo,
-                            equipoEncontrado.serie
-                        );
-
-                        notificar("🔎 Equipo encontrado por QR", "bg-primary");
-
-                        // Limpiamos la URL para que si recargas no se vuelva a abrir
+                        prepararEditar(eq.id, eq.categoria, eq.modelo, eq.serie);
+                        notificar("🔎 Encontrado por QR", "bg-primary");
                         window.history.replaceState({}, document.title, window.location.pathname);
-                    } else {
-                        notificar("⚠️ El equipo del QR no existe en la base de datos", "bg-warning");
                     }
                 }
+            }).catch(e => {
+                if (e.toString().includes("401")) location.reload(); // Forzar login
             });
         }
-        // --- ACCIONES CON QR ---
+
         function guardar() {
             const d = { categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value };
             if (!d.modelo || !d.serie) return notificar("⚠️ Faltan datos", "bg-warning");
             setCargando('btn-guardar', true);
-            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-                .then(r => r.json()).then(res => {
-                    setCargando('btn-guardar', false);
-                    if (res.status === "error") notificar(res.message, "bg-danger");
-                    else { notificar("✅ Creado", "bg-success"); document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar(); }
-                });
+            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(r => r.json()).then(res => {
+                setCargando('btn-guardar', false);
+                if (res.status === "error") notificar(res.message, "bg-danger");
+                else { notificar(res.message || "✅ Creado", "bg-success"); document.getElementById('mod').value = ''; document.getElementById('ser').value = ''; cargar(); }
+            });
         }
 
         function prepararEditar(id, cat, mod, ser) {
-            document.getElementById('edit-id').value = id;
-            document.getElementById('edit-cat').value = cat;
-            document.getElementById('edit-mod').value = mod;
-            document.getElementById('edit-ser').value = ser;
-
-            // Generar QR
-            const qrC = document.getElementById("qr-code");
-            qrC.innerHTML = "";
-            // Esto lleva al Dashboard (HTML) con el buscador activado
-            // Fíjate que hemos quitado la palabra "activos"
-            const urlFicha = `${window.location.origin}/?buscar=${ser}`;
-            new QRCode(qrC, { text: urlFicha, width: 100, height: 100 });
+            document.getElementById('edit-id').value = id; document.getElementById('edit-cat').value = cat; document.getElementById('edit-mod').value = mod; document.getElementById('edit-ser').value = ser;
+            const qrC = document.getElementById("qr-code"); qrC.innerHTML = "";
+            new QRCode(qrC, { text: `${window.location.origin}/?buscar=${ser}`, width: 100, height: 100 });
             new bootstrap.Modal(document.getElementById('modalEditar')).show();
         }
 
         function confirmarEdicion() {
-            const id = document.getElementById('edit-id').value;
-            const d = { categoria: document.getElementById('edit-cat').value, modelo: document.getElementById('edit-mod').value, serie: document.getElementById('edit-ser').value };
+            const id = document.getElementById('edit-id').value, d = { categoria: document.getElementById('edit-cat').value, modelo: document.getElementById('edit-mod').value, serie: document.getElementById('edit-ser').value };
             setCargando('btn-confirmar-edit', true);
-            fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-                .then(r => r.json()).then(res => {
-                    setCargando('btn-confirmar-edit', false);
-                    if (res.status === "success") { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("✅ Actualizado", "bg-warning"); cargar(); }
-                    else notificar(res.message, "bg-danger");
-                });
+            fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(r => r.json()).then(res => {
+                setCargando('btn-confirmar-edit', false);
+                if (res.status === "success") { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("✅ Actualizado", "bg-warning"); cargar(); }
+                else notificar(res.message, "bg-danger");
+            });
         }
 
+        // --- REPORTES PDF ---
         function imprimirQR() {
-            const qrContent = document.getElementById('qr-code').innerHTML;
-            const serie = document.getElementById('edit-ser').value;
-            const modelo = document.getElementById('edit-mod').value;
-
-            const ventana = window.open('', '', 'height=600, width=600');
-
-            ventana.document.write(`
-        <html>
-        <head>
-            <title>Etiqueta de Activo</title>
-            <style>
-                body { 
-                    font-family: 'Segoe UI', sans-serif; 
-                    display: flex; 
-                    justify-content: center; 
-                    align-items: center; 
-                    height: 100vh; 
-                    margin: 0;
-                    background: #f0f0f0; /* Fondo gris solo en pantalla para resaltar la etiqueta */
-                }
-                .etiqueta {
-                    width: 300px;
-                    padding: 20px;
-                    border: 3px solid #000;
-                    border-radius: 10px;
-                    text-align: center;
-                    background: white;
-                    page-break-inside: avoid;
-                }
-                h3 { margin: 0 0 10px 0; text-transform: uppercase; font-size: 18px; border-bottom: 2px solid #000; padding-bottom: 5px; }
-                .qr-box { margin: 15px auto; display: flex; justify-content: center; }
-                .info { font-size: 14px; font-weight: bold; margin-top: 10px; }
-                .small { font-size: 10px; color: #555; margin-top: 5px; }
-                
-                /* Al imprimir, quitamos el fondo gris y centramos */
-                @media print {
-                    body { background: white; height: auto; display: block; }
-                    .etiqueta { border: 2px solid #000; margin: 0; }
-                }
-            </style>
-        </head>
-        <body>
-            <div class="etiqueta">
-                <h3>🏢 Propiedad de IT MASTER</h3>
-                <div class="qr-box">${qrContent}</div>
-                <div class="info">S/N: ${serie}</div>
-                <div class="small">Modelo: ${modelo}</div>
-                <div class="small">Si encuentra este equipo, contacte a Soporte IT</div>
-            </div>
-        </body>
-        </html>
-    `);
-
-            ventana.document.close();
-            // Esperamos un poco para que cargue la imagen del QR antes de imprimir
-            setTimeout(() => {
-                ventana.focus();
-                ventana.print();
-                ventana.close();
-            }, 500);
+            const c = document.getElementById('qr-code').innerHTML, s = document.getElementById('edit-ser').value, m = document.getElementById('edit-mod').value;
+            const w = window.open('', '', 'height=600,width=600');
+            w.document.write(`<html><head><style>body{font-family:sans-serif;display:flex;justify-content:center;align-items:center;height:100vh}.tag{border:3px solid black;padding:20px;text-align:center;border-radius:10px;width:300px}h3{border-bottom:2px solid black;margin-bottom:10px}.qr{display:flex;justify-content:center;margin:15px}</style></head><body><div class="tag"><h3>PROPIEDAD IT MASTER</h3><div class="qr">${c}</div><p><strong>S/N: ${s}</strong><br><small>${m}</small></p></div></body></html>`);
+            w.document.close(); setTimeout(() => { w.print(); w.close() }, 500);
         }
 
-        function prepararAsignar(id, modelo, serie) {
-            // Guardamos datos en variables globales temporales para usarlos en el PDF
-            window.tempModelo = modelo;
-            window.tempSerie = serie;
+        function imprimirFichaTecnica() {
+            const id = document.getElementById('edit-id').value;
+            const mod = document.getElementById('edit-mod').value;
+            const ser = document.getElementById('edit-ser').value;
 
-            document.getElementById('id-asignar-temp').value = id;
-            new bootstrap.Modal(document.getElementById('modalAsignar')).show();
+            fetch(`/historial/${id}`).then(r => r.json()).then(hist => {
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(18); doc.text("FICHA TÉCNICA DEL ACTIVO", 105, 20, null, null, "center");
+                doc.setFontSize(12); doc.text(`Modelo: ${mod}`, 20, 40); doc.text(`Serie: ${ser}`, 20, 50);
+                doc.line(20, 55, 190, 55);
+                doc.text("Historial de Movimientos:", 20, 65);
+
+                let y = 75;
+                hist.forEach(h => {
+                    doc.setFontSize(10);
+                    doc.text(`${new Date(h.fecha).toLocaleString()} - ${h.detalle}`, 20, y);
+                    y += 10;
+                });
+                doc.save(`Ficha_${ser}.pdf`);
+            });
+        }
+
+        function prepararAsignar(id, mod, ser) { window.tempModelo = mod; window.tempSerie = ser; document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
+        async function confirmarAsignacion() {
+            const id = document.getElementById('id-asignar-temp').value, u = document.getElementById('nombre-usuario-modal').value;
+            if (!u) return notificar("⚠️ Falta nombre", "bg-warning");
+            setCargando('btn-confirmar-asignar', true);
+            const res = await fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) });
+            setCargando('btn-confirmar-asignar', false);
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("👤 Asignado", "bg-primary"); cargar();
+                if (confirm("¿Descargar Acta de Entrega?")) generarPDFEntrega(u);
+            }
+        }
+
+        function generarPDFEntrega(u) {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.setFontSize(22); doc.text("ACTA DE ENTREGA", 105, 20, null, null, "center");
+            doc.setFontSize(12); doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 40);
+            doc.rect(20, 50, 170, 30); doc.text(`Responsable: ${u}`, 25, 60); doc.text(`Equipo: ${window.tempModelo || ''} (S/N: ${window.tempSerie || ''})`, 25, 70);
+            doc.text("Se hace entrega del equipo en buen estado.", 20, 100);
+            doc.line(40, 150, 90, 150); doc.text("Firma Usuario", 40, 155);
+            doc.save(`Acta_${u}.pdf`);
         }
 
         function prepararBorrar(id) { document.getElementById('id-borrar-temp').value = id; new bootstrap.Modal(document.getElementById('modalBorrar')).show(); }
         function confirmarBorrado() {
-            const id = document.getElementById('id-borrar-temp').value;
-            setCargando('btn-confirmar-borrar', true);
-            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => { setCargando('btn-confirmar-borrar', false); bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("🗑️ Eliminado", "bg-dark"); cargar(); });
+            const id = document.getElementById('id-borrar-temp').value; setCargando('btn-confirmar-borrar', true);
+            fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => { setCargando('btn-confirmar-borrar', false); bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("🗑️ Archivado", "bg-dark"); cargar(); });
         }
-
-        function verHistorial(id, mod) {
-            fetch(`/historial/${id}`).then(r => r.json()).then(data => {
-                if (data.length === 0) return notificar("ℹ️ Sin historial", "bg-secondary");
-                document.getElementById('tituloHistorial').innerText = `Historial: ${mod}`;
-                let html = '<ul class="list-group list-group-flush">';
-                data.forEach(x => html += `<li class="list-group-item border-0 border-bottom py-3"><div class="d-flex justify-content-between"><span class="fw-bold">${x.detalle}</span><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small></div></li>`);
-                document.getElementById('cuerpoHistorial').innerHTML = html + '</ul>';
-                new bootstrap.Modal(document.getElementById('modalHistorial')).show();
+        function verHistorial(id, mod) { fetch(`/historial/${id}`).then(r => r.json()).then(data => { document.getElementById('tituloHistorial').innerText = `Historial: ${mod}`; let html = '<ul class="list-group list-group-flush">'; data.forEach(x => html += `<li class="list-group-item border-0 border-bottom py-3"><div class="d-flex justify-content-between"><span class="fw-bold">${x.detalle}</span><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small></div></li>`); document.getElementById('cuerpoHistorial').innerHTML = html + '</ul>'; new bootstrap.Modal(document.getElementById('modalHistorial')).show(); }); }
+        function subirExcel(input) {
+            if (!input.files[0]) return;
+            let fd = new FormData(); fd.append("file", input.files[0]);
+            notificar("⏳ Subiendo...", "bg-warning");
+            fetch('/importar', { method: 'POST', body: fd }).then(r => r.json()).then(res => {
+                if (res.status === 'success') { notificar(res.message, "bg-success"); cargar(); } else notificar(res.message, "bg-danger");
+                input.value = '';
             });
         }
-
-        function filtrar() {
-            const v = document.getElementById('buscador').value.toLowerCase();
-            document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
-        }
-
+        function filtrar() { const v = document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none'); }
         cargar();
     </script>
 </body>
