@@ -2,15 +2,16 @@ import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends, UploadFile, File, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 import os
 import secrets
 from io import BytesIO
+from datetime import datetime, timedelta
 
 app = FastAPI()
 security = HTTPBasic()
@@ -37,6 +38,7 @@ class ActivoSchema(BaseModel):
     delegacion: str
     coste: Optional[float] = 0.0
     fecha_compra: Optional[str] = ""
+    fin_garantia: Optional[str] = "" # NUEVO CAMPO
 
 class AsignacionSchema(BaseModel):
     id: int
@@ -46,6 +48,9 @@ class EstadoSchema(BaseModel):
     id: int
     estado: str
     nota: str
+
+class MasivoSchema(BaseModel): # NUEVO PARA BORRADO MASIVO
+    ids: List[int]
 
 try:
     db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, dsn=os.getenv("DATABASE_URL"))
@@ -71,10 +76,12 @@ def inicializar_db():
                 estado TEXT DEFAULT 'Disponible', usuario TEXT DEFAULT 'N/A',
                 activo BOOLEAN DEFAULT TRUE,
                 numero_activo TEXT DEFAULT '', delegacion TEXT DEFAULT 'Central',
-                coste NUMERIC(10,2) DEFAULT 0, fecha_compra TEXT DEFAULT ''
+                coste NUMERIC(10,2) DEFAULT 0, fecha_compra TEXT DEFAULT '',
+                fin_garantia TEXT DEFAULT ''
             )''')
-        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS coste NUMERIC(10,2) DEFAULT 0")
-        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS fecha_compra TEXT DEFAULT ''")
+        # MIGRACIONES AUTOMÁTICAS
+        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS fin_garantia TEXT DEFAULT ''")
+        
         cur.execute('''
             CREATE TABLE IF NOT EXISTS historial (
                 id SERIAL PRIMARY KEY,
@@ -88,7 +95,7 @@ def inicializar_db():
 
 inicializar_db()
 
-# --- ENDPOINTS ---
+# --- RUTAS ---
 
 @app.get("/")
 def home(user: str = Depends(check_credentials)):
@@ -101,9 +108,7 @@ def leer_activos():
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT * FROM activos WHERE activo = TRUE ORDER BY id DESC")
         return cur.fetchall()
-    finally:
-        cur.close()
-        release_conn(conn)
+    finally: release_conn(conn)
 
 @app.get("/actividad", dependencies=[Depends(check_credentials)])
 def actividad_reciente():
@@ -112,9 +117,7 @@ def actividad_reciente():
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT h.detalle, h.fecha, a.modelo, a.numero_activo FROM historial h JOIN activos a ON h.activo_id = a.id ORDER BY h.fecha DESC LIMIT 10")
         return cur.fetchall()
-    finally:
-        cur.close()
-        release_conn(conn)
+    finally: release_conn(conn)
 
 @app.post("/crear", dependencies=[Depends(check_credentials)])
 def crear(activo: ActivoSchema):
@@ -125,10 +128,17 @@ def crear(activo: ActivoSchema):
         existe = cur.fetchone()
         if existe:
             if existe[1] is True: return {"status": "error", "message": "Serie duplicada"}
-            cur.execute("UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, numero_activo=%s, delegacion=%s, coste=%s, fecha_compra=%s, estado='Disponible' WHERE id=%s", (activo.categoria, activo.modelo, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra, existe[0]))
+            cur.execute("""UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, numero_activo=%s, 
+                        delegacion=%s, coste=%s, fecha_compra=%s, fin_garantia=%s, estado='Disponible' WHERE id=%s""", 
+                        (activo.categoria, activo.modelo, activo.numero_activo, activo.delegacion, 
+                         activo.coste, activo.fecha_compra, activo.fin_garantia, existe[0]))
             conn.commit()
             return {"status": "success", "message": "Reactivado"}
-        cur.execute("INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion, coste, fecha_compra) VALUES (%s, %s, %s, %s, %s, %s, %s)", (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra))
+        
+        cur.execute("""INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion, coste, fecha_compra, fin_garantia) 
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)""", 
+                    (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, 
+                     activo.coste, activo.fecha_compra, activo.fin_garantia))
         conn.commit()
         return {"status": "success"}
     except Exception as e: return {"status": "error", "message": str(e)}
@@ -139,7 +149,10 @@ def actualizar(id: int, activo: ActivoSchema):
     conn = get_conn()
     try:
         cur = conn.cursor()
-        cur.execute("UPDATE activos SET categoria=%s, modelo=%s, serie=%s, numero_activo=%s, delegacion=%s, coste=%s, fecha_compra=%s WHERE id=%s", (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra, id))
+        cur.execute("""UPDATE activos SET categoria=%s, modelo=%s, serie=%s, numero_activo=%s, 
+                    delegacion=%s, coste=%s, fecha_compra=%s, fin_garantia=%s WHERE id=%s""", 
+                    (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, 
+                     activo.delegacion, activo.coste, activo.fecha_compra, activo.fin_garantia, id))
         conn.commit()
         return {"status": "success"}
     except Exception as e: return {"status": "error", "message": str(e)}
@@ -178,6 +191,19 @@ def eliminar(id: int):
         return {"status": "success"}
     finally: release_conn(conn)
 
+# NUEVO: Endpoint para borrado masivo
+@app.post("/eliminar-masivo", dependencies=[Depends(check_credentials)])
+def eliminar_masivo(datos: MasivoSchema):
+    conn = get_conn()
+    try:
+        cur = conn.cursor()
+        # Convertimos la lista de IDs a una tupla para SQL
+        if not datos.ids: return {"status": "error", "message": "Nada seleccionado"}
+        cur.execute("UPDATE activos SET activo = FALSE WHERE id = ANY(%s)", (datos.ids,))
+        conn.commit()
+        return {"status": "success"}
+    finally: release_conn(conn)
+
 @app.get("/historial/{id}", dependencies=[Depends(check_credentials)])
 def historial(id: int):
     conn = get_conn()
@@ -203,16 +229,20 @@ def importar(file: UploadFile = File(...)):
     conn = get_conn()
     try:
         df = pd.read_excel(BytesIO(file.file.read()), engine='openpyxl')
-        for c in ['numero_activo','delegacion','fecha_compra']: 
+        for c in ['numero_activo','delegacion','fecha_compra','fin_garantia']: 
             if c not in df.columns: df[c]=''
         if 'coste' not in df.columns: df['coste']=0
+        
         cur = conn.cursor()
         n=0
         for _, r in df.iterrows():
             try:
                 cur.execute("SELECT id FROM activos WHERE serie=%s",(str(r['serie']),))
                 if not cur.fetchone():
-                    cur.execute("INSERT INTO activos (categoria,modelo,serie,numero_activo,delegacion,coste,fecha_compra) VALUES (%s,%s,%s,%s,%s,%s,%s)",(r['categoria'],r['modelo'],str(r['serie']),str(r['numero_activo']),str(r['delegacion']),float(r['coste'] or 0),str(r['fecha_compra'])))
+                    cur.execute("""INSERT INTO activos (categoria,modelo,serie,numero_activo,delegacion,coste,fecha_compra,fin_garantia) 
+                                VALUES (%s,%s,%s,%s,%s,%s,%s,%s)""",
+                                (r['categoria'],r['modelo'],str(r['serie']),str(r['numero_activo']),str(r['delegacion']),
+                                 float(r['coste'] or 0),str(r['fecha_compra']),str(r['fin_garantia'])))
                     n+=1
             except: conn.rollback(); continue
         conn.commit()
