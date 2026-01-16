@@ -4,9 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IT Master V3 - Finance</title>
+    <title>IT Master V4 - Pro</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -16,32 +18,56 @@
         :root {
             --sidebar-width: 260px;
             --card-bg: #fff;
-            --body-bg: #f4f6f9;
+            --body-bg: #f0f2f5;
+            --glass: rgba(255, 255, 255, 0.05);
         }
 
         [data-bs-theme="dark"] {
-            --card-bg: #212529;
-            --body-bg: #121212;
+            --card-bg: #1e1e2d;
+            --body-bg: #151521;
+            --glass: rgba(0, 0, 0, 0.2);
         }
 
         body {
             background-color: var(--body-bg);
             font-family: 'Segoe UI', system-ui, sans-serif;
             overflow-x: hidden;
+            transition: background 0.3s ease;
         }
 
+        /* Glassmorphism Sidebar */
+        #sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            left: 0;
+            top: 0;
+            background: #1a1a27;
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            z-index: 1000;
+            transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #content {
+            margin-left: var(--sidebar-width);
+            padding: 30px;
+            width: calc(100% - var(--sidebar-width));
+            transition: 0.3s;
+        }
+
+        /* Mobile Overlay */
         #overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1900;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 900;
             opacity: 0;
             visibility: hidden;
             transition: 0.3s;
-            backdrop-filter: blur(3px);
+            backdrop-filter: blur(4px);
         }
 
         #overlay.active {
@@ -49,38 +75,10 @@
             visibility: visible;
         }
 
-        @media (min-width: 769px) {
-            #sidebar {
-                width: var(--sidebar-width);
-                height: 100vh;
-                position: fixed;
-                left: 0;
-                background: #1a1d20;
-                color: white;
-                border-right: 1px solid rgba(255, 255, 255, 0.1);
-            }
-
-            #content {
-                margin-left: var(--sidebar-width);
-                padding: 30px;
-                width: calc(100% - var(--sidebar-width));
-            }
-
-            #btn-abrir {
-                display: none !important;
-            }
-        }
-
         @media (max-width: 768px) {
             #sidebar {
-                position: fixed;
                 left: -280px;
-                width: var(--sidebar-width);
-                height: 100vh;
-                background: #1a1d20;
-                z-index: 2000;
-                transition: 0.3s;
-                box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);
+                box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
             }
 
             #sidebar.active {
@@ -94,59 +92,76 @@
             }
         }
 
+        /* Nav Links Animados */
         .nav-link {
-            color: rgba(255, 255, 255, 0.75);
-            padding: 14px 24px;
-            transition: 0.2s;
-            cursor: pointer;
+            color: #a2a3b7;
+            padding: 12px 20px;
+            margin: 5px 15px;
+            border-radius: 10px;
+            transition: all 0.2s ease;
             display: flex;
             align-items: center;
-            border-radius: 0 25px 25px 0;
-            margin-right: 15px;
         }
 
         .nav-link:hover {
             background: rgba(255, 255, 255, 0.05);
-            color: white;
+            color: #fff;
+            transform: translateX(5px);
         }
 
         .nav-link.active {
-            background: rgba(13, 110, 253, 0.15);
-            color: #4dabf7;
-            border-left: 4px solid #0d6efd;
-            font-weight: 600;
+            background: linear-gradient(90deg, #0d6efd 0%, #0099ff 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
         }
 
+        /* Cards con Hover */
         .card-custom {
             border: none;
-            border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            border-radius: 15px;
             background-color: var(--card-bg);
-            margin-bottom: 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
+        .card-custom:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Tablas Bonitas */
+        .table-row-anim {
+            animation: fadeInUp 0.5s ease backwards;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(13, 110, 253, 0.05);
+            transform: scale(1.005);
+            transition: 0.2s;
+        }
+
+        /* Badges */
         .badge-activo {
-            background-color: #fd7e14;
-            color: black;
-            font-weight: bold;
-            padding: 4px 8px;
-            border-radius: 4px;
+            background: #3e4053;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 6px;
             font-family: monospace;
+            letter-spacing: 1px;
         }
 
-        .vista {
-            display: none;
-            animation: fadeIn 0.3s;
+        .status-dot {
+            height: 10px;
+            width: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
         }
 
-        .vista.activa {
-            display: block;
-        }
-
-        @keyframes fadeIn {
+        @keyframes fadeInUp {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(20px);
             }
 
             to {
@@ -159,126 +174,133 @@
 
 <body>
     <div id="overlay" onclick="toggleMenu()"></div>
-    <button id="btn-abrir" class="btn btn-dark d-md-none position-fixed top-0 start-0 m-3 z-3 shadow"
+    <button id="btn-abrir"
+        class="btn btn-primary d-md-none position-fixed top-0 start-0 m-3 z-3 shadow rounded-circle p-3"
         onclick="toggleMenu()"><i class="bi bi-list fs-4"></i></button>
 
-    <div id="sidebar">
-        <div class="p-4 d-flex align-items-center mb-2"><i class="bi bi-shield-lock-fill fs-3 text-primary me-2"></i>
-            <h4 class="fw-bold m-0">IT MASTER</h4>
+    <div id="sidebar" class="d-flex flex-column">
+        <div class="p-4 d-flex align-items-center border-bottom border-dark border-opacity-50">
+            <div class="bg-primary rounded p-2 me-3"><i class="bi bi-cpu-fill text-white fs-4"></i></div>
+            <div>
+                <h5 class="fw-bold m-0 text-white">IT MASTER</h5><small class="text-muted">Pro Edition</small>
+            </div>
         </div>
-        <nav class="nav flex-column">
-            <a class="nav-link active" onclick="verVentana('v-inicio', this)"><i class="bi bi-speedometer2 me-3"></i>
+        <nav class="nav flex-column mt-4 flex-grow-1">
+            <a class="nav-link active" onclick="verVentana('v-inicio', this)"><i class="bi bi-grid-1x2-fill me-3"></i>
                 Dashboard</a>
-            <a class="nav-link" onclick="verVentana('v-stock', this)"><i class="bi bi-pc-display-horizontal me-3"></i>
+            <a class="nav-link" onclick="verVentana('v-stock', this)"><i class="bi bi-box-seam-fill me-3"></i>
                 Inventario</a>
-            <a class="nav-link" onclick="verVentana('v-operaciones', this)"><i class="bi bi-people me-3"></i>
+            <a class="nav-link" onclick="verVentana('v-operaciones', this)"><i class="bi bi-people-fill me-3"></i>
                 Asignaciones</a>
-            <hr class="mx-3 opacity-25">
-            <label class="nav-link text-info" style="cursor: pointer;"><i class="bi bi-cloud-arrow-up me-3"></i>
-                Importar Excel<input type="file" id="inputExcel" hidden accept=".xlsx, .xls"
-                    onchange="subirExcel(this)"></label>
-            <a class="nav-link text-success" href="/exportar"><i class="bi bi-file-earmark-spreadsheet me-3"></i>
+            <div class="mt-4 px-4 text-muted small text-uppercase fw-bold mb-2">Herramientas</div>
+            <label class="nav-link text-info" style="cursor: pointer;"><i
+                    class="bi bi-file-earmark-arrow-up-fill me-3"></i> Importar Excel<input type="file" id="inputExcel"
+                    hidden accept=".xlsx, .xls" onchange="subirExcel(this)"></label>
+            <a class="nav-link text-success" href="/exportar"><i class="bi bi-file-earmark-spreadsheet-fill me-3"></i>
                 Exportar Todo</a>
         </nav>
-        <div class="p-4 mt-auto"><button class="btn btn-outline-secondary w-100 btn-sm" onclick="toggleDarkMode()"><i
-                    class="bi bi-moon-stars me-2"></i>Tema</button></div>
+        <div class="p-4"><button class="btn btn-outline-secondary w-100 rounded-pill" onclick="toggleDarkMode()"><i
+                    class="bi bi-moon-stars-fill me-2"></i>Tema</button></div>
     </div>
 
     <div id="content">
-        <div id="stock-alerts"></div>
-
-        <div id="v-inicio" class="vista activa">
-            <h3 class="mb-4 fw-bold">Visión Financiera</h3>
+        <div id="v-inicio" class="vista activa animate__animated animate__fadeIn">
+            <h2 class="fw-bold mb-4">Resumen General</h2>
             <div class="row g-4 mb-4">
                 <div class="col-md-3">
-                    <div class="card card-custom p-4 border-start border-4 border-primary">
-                        <h6>Total Activos</h6>
-                        <h2 class="fw-bold" id="total">0</h2>
+                    <div class="card card-custom p-4 border-start border-5 border-primary h-100">
+                        <div class="text-muted small fw-bold text-uppercase">Total Activos</div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <h2 class="fw-bold mb-0 count-up" id="total">0</h2>
+                            <i class="bi bi-hdd-stack fs-1 text-primary opacity-25"></i>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card card-custom p-4 border-start border-4 border-success">
-                        <h6>Disponibles</h6>
-                        <h2 class="fw-bold text-success" id="disp">0</h2>
+                    <div class="card card-custom p-4 border-start border-5 border-success h-100">
+                        <div class="text-muted small fw-bold text-uppercase">Disponibles</div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <h2 class="fw-bold mb-0 text-success count-up" id="disp">0</h2>
+                            <i class="bi bi-check-circle fs-1 text-success opacity-25"></i>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card card-custom p-4 border-start border-4 border-warning">
-                        <h6>Reparación</h6>
-                        <h2 class="fw-bold text-warning" id="rep">0</h2>
+                    <div class="card card-custom p-4 border-start border-5 border-danger h-100">
+                        <div class="text-muted small fw-bold text-uppercase">Inversión</div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <h2 class="fw-bold mb-0 text-danger" id="valor-total">0€</h2>
+                            <i class="bi bi-currency-euro fs-1 text-danger opacity-25"></i>
+                        </div>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="card card-custom p-4 border-start border-4 border-danger">
-                        <h6>Inversión Total</h6>
-                        <h2 class="fw-bold text-danger" id="valor-total">0€</h2>
+                    <div class="card card-custom p-4 border-start border-5 border-warning h-100">
+                        <div class="text-muted small fw-bold text-uppercase">Reparación</div>
+                        <div class="d-flex align-items-center justify-content-between mt-2">
+                            <h2 class="fw-bold mb-0 text-warning count-up" id="rep">0</h2>
+                            <i class="bi bi-tools fs-1 text-warning opacity-25"></i>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="row g-4">
                 <div class="col-lg-8">
-                    <div class="row g-4">
-                        <div class="col-md-6">
-                            <div class="card card-custom p-4">
-                                <h6 class="text-muted mb-3">Distribución</h6><canvas id="chartDelegacion"
-                                    style="max-height: 200px;"></canvas>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="card card-custom p-4">
-                                <h6 class="text-muted mb-3">Categorías</h6><canvas id="chartCategoria"
-                                    style="max-height: 200px;"></canvas>
-                            </div>
+                    <div class="card card-custom p-4 mb-4">
+                        <h5 class="fw-bold mb-4">Distribución de Activos</h5>
+                        <div class="row">
+                            <div class="col-md-6"><canvas id="chartCategoria"></canvas></div>
+                            <div class="col-md-6"><canvas id="chartDelegacion"></canvas></div>
                         </div>
                     </div>
                 </div>
                 <div class="col-lg-4">
                     <div class="card card-custom p-4 h-100">
-                        <h6 class="fw-bold mb-4">Actividad Reciente</h6>
-                        <div id="feed-actividad" style="max-height: 400px; overflow-y: auto;">Cargando...</div>
+                        <h5 class="fw-bold mb-4">Feed de Actividad</h5>
+                        <div id="feed-actividad" style="max-height: 400px; overflow-y: auto;" class="pe-2"></div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div id="v-stock" class="vista">
-            <h3 class="fw-bold mb-4">Inventario & Costes</h3>
-            <div class="card card-custom p-4 mb-4">
-                <h6 class="mb-3 fw-bold text-primary">Alta de Activo</h6>
+        <div id="v-stock" class="vista animate__animated animate__fadeIn">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="fw-bold">Inventario</h2>
+                <button class="btn btn-primary rounded-pill px-4" onclick="toggleForm()"><i
+                        class="bi bi-plus-lg me-2"></i>Nuevo Activo</button>
+            </div>
+
+            <div id="form-alta" class="card card-custom p-4 mb-4" style="display:none;">
+                <h6 class="text-primary fw-bold mb-3">Alta Rápida</h6>
                 <div class="row g-3">
-                    <div class="col-md-2"><input type="text" id="n-activo"
-                            class="form-control bg-body-secondary border-0" placeholder="Etiqueta (IT-001)"></div>
-                    <div class="col-md-2"><select id="cat" class="form-select bg-body-secondary border-0">
+                    <div class="col-md-2"><input type="text" id="n-activo" class="form-control"
+                            placeholder="Etiqueta (IT-001)"></div>
+                    <div class="col-md-2"><select id="cat" class="form-select">
                             <option value="Laptop">Laptop 💻</option>
                             <option value="Monitor">Monitor 🖥️</option>
                             <option value="Móvil">Móvil 📱</option>
-                            <option value="Periférico">Periférico 🖱️</option>
                         </select></div>
-                    <div class="col-md-2"><input type="text" id="mod" class="form-control bg-body-secondary border-0"
-                            placeholder="Modelo"></div>
-                    <div class="col-md-2"><input type="text" id="ser" class="form-control bg-body-secondary border-0"
-                            placeholder="S/N"></div>
-                    <div class="col-md-2"><input type="number" id="coste"
-                            class="form-control bg-body-secondary border-0" placeholder="Coste (€)"></div>
-                    <div class="col-md-2"><button onclick="guardar()"
-                            class="btn btn-primary w-100 fw-bold">Guardar</button></div>
-                </div>
-                <div class="row g-3 mt-1">
-                    <div class="col-md-2"><input type="date" id="fecha-compra"
-                            class="form-control bg-body-secondary border-0"></div>
-                    <div class="col-md-2"><input type="text" id="del" class="form-control bg-body-secondary border-0"
-                            placeholder="Sede (Madrid...)"></div>
+                    <div class="col-md-2"><input type="text" id="mod" class="form-control" placeholder="Modelo"></div>
+                    <div class="col-md-2"><input type="text" id="ser" class="form-control" placeholder="Serie S/N">
+                    </div>
+                    <div class="col-md-2"><input type="number" id="coste" class="form-control" placeholder="Coste €">
+                    </div>
+                    <div class="col-md-2"><button onclick="guardar()" class="btn btn-success w-100">Guardar</button>
+                    </div>
+                    <div class="col-md-3"><input type="date" id="fecha-compra" class="form-control"></div>
+                    <div class="col-md-3"><input type="text" id="del" class="form-control" placeholder="Delegación">
+                    </div>
                 </div>
             </div>
 
-            <div class="table-responsive card-custom p-0 shadow-sm">
+            <div class="table-responsive card-custom p-0">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-body-tertiary">
+                    <thead class="bg-body-tertiary border-bottom">
                         <tr>
                             <th class="p-3">ID</th>
                             <th>Modelo</th>
-                            <th>S/N</th>
+                            <th>Serie</th>
                             <th>Sede</th>
                             <th>Coste</th>
                             <th>Estado</th>
@@ -290,19 +312,20 @@
             </div>
         </div>
 
-        <div id="v-operaciones" class="vista">
-            <h3 class="mb-4 fw-bold">Asignaciones</h3>
-            <div class="mb-4 position-relative"><i
-                    class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i><input
-                    type="text" id="buscador" class="form-control p-3 ps-5 border-0 shadow-sm rounded-pill"
-                    placeholder="Buscar..." onkeyup="filtrar()"></div>
-            <div class="table-responsive card-custom p-0 shadow-sm">
+        <div id="v-operaciones" class="vista animate__animated animate__fadeIn">
+            <h2 class="fw-bold mb-4">Asignaciones</h2>
+            <div class="input-group mb-4 shadow-sm">
+                <span class="input-group-text bg-white border-0 ps-3"><i class="bi bi-search"></i></span>
+                <input type="text" id="buscador" class="form-control border-0 p-3"
+                    placeholder="Buscar empleado, serie o modelo..." onkeyup="filtrar()">
+            </div>
+            <div class="table-responsive card-custom p-0">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-body-tertiary">
                         <tr>
-                            <th class="p-3">Equipo</th>
-                            <th>Identificador</th>
-                            <th>Usuario</th>
+                            <th class="p-3">Activo</th>
+                            <th>Detalle</th>
+                            <th>Asignado a</th>
                             <th class="text-end p-3">Gestión</th>
                         </tr>
                     </thead>
@@ -314,266 +337,323 @@
 
     <div class="modal fade" id="modalEditar" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Gestión Total</h5><button type="button" class="btn-close"
-                        data-bs-dismiss="modal"></button>
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-primary text-white border-0">
+                    <h5 class="modal-title fw-bold">Ficha de Activo</h5><button type="button"
+                        class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body pt-0">
+                <div class="modal-body p-4">
                     <div class="row g-4">
                         <div class="col-md-8">
                             <input type="hidden" id="edit-id">
-                            <div class="row g-2 mb-2">
-                                <div class="col-6"><label class="small text-muted">Etiqueta</label><input type="text"
-                                        id="edit-n-activo" class="form-control bg-body-secondary border-0"></div>
-                                <div class="col-6"><label class="small text-muted">Sede</label><input type="text"
-                                        id="edit-del" class="form-control bg-body-secondary border-0"></div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-6"><label class="small text-muted fw-bold">Etiqueta</label><input
+                                        type="text" id="edit-n-activo" class="form-control bg-light border-0 fw-bold">
+                                </div>
+                                <div class="col-6"><label class="small text-muted fw-bold">Sede</label><input
+                                        type="text" id="edit-del" class="form-control bg-light border-0"></div>
                             </div>
-                            <div class="row g-2 mb-2">
-                                <div class="col-6"><label class="small text-muted">Modelo</label><input type="text"
-                                        id="edit-mod" class="form-control bg-body-secondary border-0"></div>
-                                <div class="col-6"><label class="small text-muted">Serie</label><input type="text"
-                                        id="edit-ser" class="form-control bg-body-secondary border-0"></div>
+                            <div class="row g-3 mb-3">
+                                <div class="col-6"><label class="small text-muted fw-bold">Categoría</label><select
+                                        id="edit-cat" class="form-select bg-light border-0">
+                                        <option value="Laptop">Laptop</option>
+                                        <option value="Monitor">Monitor</option>
+                                        <option value="Móvil">Móvil</option>
+                                    </select></div>
+                                <div class="col-6"><label class="small text-muted fw-bold">Modelo</label><input
+                                        type="text" id="edit-mod" class="form-control bg-light border-0"></div>
                             </div>
-                            <div class="row g-2 mb-3 bg-light p-2 rounded">
+                            <div class="mb-3"><label class="small text-muted fw-bold">Número de Serie</label><input
+                                    type="text" id="edit-ser" class="form-control bg-light border-0 font-monospace">
+                            </div>
+                            <div class="row g-3 mb-4 p-3 bg-light rounded-3 mx-0">
                                 <div class="col-6"><label class="small text-muted fw-bold">Coste (€)</label><input
                                         type="number" id="edit-coste" class="form-control border-0"></div>
                                 <div class="col-6"><label class="small text-muted fw-bold">Fecha Compra</label><input
                                         type="date" id="edit-fecha" class="form-control border-0"></div>
                             </div>
-                            <button class="btn btn-outline-warning w-100 mb-2" onclick="marcarReparacion()"><i
-                                    class="bi bi-tools"></i> Enviar a Reparación</button>
+                            <button class="btn btn-warning w-100 rounded-pill fw-bold" onclick="marcarReparacion()"><i
+                                    class="bi bi-tools me-2"></i>Enviar a Reparación</button>
                         </div>
-                        <div class="col-md-4 text-center border-start">
-                            <div id="qr-code" class="p-2 bg-white border rounded mb-3"></div>
+                        <div class="col-md-4 border-start text-center">
+                            <div id="qr-code" class="p-3 bg-white shadow-sm rounded mb-3 d-inline-block"></div>
                             <div class="d-grid gap-2">
-                                <button class="btn btn-sm btn-dark" onclick="imprimirQR()">Sticker QR</button>
-                                <button class="btn btn-sm btn-primary" onclick="imprimirFichaTecnica()">📄 Ficha
-                                    PDF</button>
+                                <button class="btn btn-dark btn-sm rounded-pill" onclick="imprimirQR()"><i
+                                        class="bi bi-qr-code me-2"></i>Sticker</button>
+                                <button class="btn btn-primary btn-sm rounded-pill" onclick="imprimirFichaTecnica()"><i
+                                        class="bi bi-file-text me-2"></i>Ficha PDF</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0"><button onclick="confirmarEdicion()"
-                        class="btn btn-success w-100 fw-bold">Guardar Todo</button></div>
+                <div class="modal-footer border-0 bg-light"><button onclick="confirmarEdicion()"
+                        class="btn btn-success px-5 rounded-pill fw-bold shadow">Guardar Cambios</button></div>
             </div>
         </div>
     </div>
 
     <div class="modal fade" id="modalAsignar" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4">
+            <div class="modal-content border-0 shadow rounded-4">
                 <div class="modal-header border-0">
-                    <h5 class="modal-title fw-bold">Asignar</h5><button type="button" class="btn-close"
-                        data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title fw-bold">Asignar Equipo</h5>
                 </div>
                 <div class="modal-body"><input type="hidden" id="id-asignar-temp"><input type="text"
-                        id="nombre-usuario-modal" class="form-control bg-body-secondary border-0 p-3"
-                        placeholder="Nombre completo"></div>
+                        id="nombre-usuario-modal" class="form-control p-3 bg-light border-0"
+                        placeholder="Nombre del empleado"></div>
                 <div class="modal-footer border-0"><button onclick="confirmarAsignacion()"
-                        class="btn btn-primary w-100 fw-bold">Confirmar</button></div>
+                        class="btn btn-primary w-100 rounded-pill">Confirmar</button></div>
             </div>
         </div>
     </div>
-    <div class="modal fade" id="modalBorrar" tabindex="-1">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div class="modal-content border-0 shadow-lg rounded-4 text-center p-4"><input type="hidden"
-                    id="id-borrar-temp">
-                <h5 class="fw-bold text-danger">¿Archivar?</h5><button onclick="confirmarBorrado()"
-                    class="btn btn-danger w-100 mt-2">Sí</button>
-            </div>
-        </div>
-    </div>
+
     <div class="modal fade" id="modalHistorial" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content border-0 shadow-lg rounded-4">
-                <div class="modal-header border-0 bg-light">
-                    <h5 class="modal-title fw-bold" id="tituloHistorial"></h5><button type="button" class="btn-close"
+            <div class="modal-content border-0 shadow rounded-4">
+                <div class="modal-header border-0">
+                    <h5 class="modal-title fw-bold" id="tituloHistorial"></h5><button class="btn-close"
                         data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-0" id="cuerpoHistorial" style="max-height:400px;overflow-y:auto;"></div>
-            </div>
-        </div>
-    </div>
-    <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div id="liveToast" class="toast align-items-center text-white border-0 rounded-3 shadow" role="alert">
-            <div class="d-flex">
-                <div class="toast-body" id="toast-mensaje"></div><button type="button"
-                    class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                <div class="modal-body p-0" id="cuerpoHistorial"></div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const iconos = { Laptop: '💻', Monitor: '🖥️', Móvil: '📱', Periférico: '🖱️' };
-        let chartDelegacionInstance = null, chartCatInstance = null;
+        let globalData = [];
+        let chart1 = null, chart2 = null;
 
+        // UI Helpers
         function toggleMenu() { document.getElementById('sidebar').classList.toggle('active'); document.getElementById('overlay').classList.toggle('active'); }
+        function toggleForm() { const f = document.getElementById('form-alta'); f.style.display = f.style.display === 'none' ? 'block' : 'none'; }
         function toggleDarkMode() { document.documentElement.setAttribute('data-bs-theme', document.documentElement.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark'); }
         function verVentana(id, el) { document.querySelectorAll('.vista').forEach(v => v.classList.remove('activa')); document.getElementById(id).classList.add('activa'); document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active')); el.classList.add('active'); if (window.innerWidth <= 768 && document.getElementById('sidebar').classList.contains('active')) toggleMenu(); }
-        function notificar(msg, color = 'bg-dark') { const t = document.getElementById('liveToast'); document.getElementById('toast-mensaje').innerText = msg; t.className = `toast align-items-center text-white border-0 rounded-3 shadow ${color}`; new bootstrap.Toast(t).show(); }
 
-        function cargar() {
-            fetch('/activos').then(r => r.json()).then(data => {
-                // KPIs
-                document.getElementById('total').innerText = data.length;
-                document.getElementById('disp').innerText = data.filter(x => x.estado === 'Disponible').length;
-                document.getElementById('rep').innerText = data.filter(x => x.estado === 'En Reparación').length;
+        // ANIMAR NÚMEROS (CountUp logic simple)
+        function animateValue(obj, start, end, duration) {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
 
-                // CALCULAR VALOR TOTAL (SUMA DE COSTES)
-                const valorTotal = data.reduce((acc, item) => acc + (item.coste || 0), 0);
-                document.getElementById('valor-total').innerText = valorTotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
+        // CARGA DE DATOS
+        async function cargar() {
+            try {
+                const res = await fetch('/activos');
+                if (res.status === 401) { location.reload(); return; } // Auto login
+                const data = await res.json();
+                globalData = data; // Guardamos en memoria para editar sin errores
 
-                // ALERTAS
-                const conteo = {}; const delegaciones = {};
-                data.forEach(x => {
-                    if (x.estado === 'Disponible') conteo[x.categoria] = (conteo[x.categoria] || 0) + 1;
-                    delegaciones[x.delegacion] = (delegaciones[x.delegacion] || 0) + 1;
-                });
-                const alertas = document.getElementById('stock-alerts'); alertas.innerHTML = '';
-                for (const [c, n] of Object.entries(conteo)) if (n < 2) alertas.innerHTML += `<div class="alert alert-warning m-3 border-0 shadow-sm">⚠️ Stock bajo: <strong>${c}</strong> (${n})</div>`;
+                // KPIs Animados
+                animateValue(document.getElementById('total'), 0, data.length, 1000);
+                animateValue(document.getElementById('disp'), 0, data.filter(x => x.estado === 'Disponible').length, 1000);
+                animateValue(document.getElementById('rep'), 0, data.filter(x => x.estado === 'En Reparación').length, 1000);
 
-                // GRÁFICOS
-                if (chartDelegacionInstance) chartDelegacionInstance.destroy();
-                chartDelegacionInstance = new Chart(document.getElementById('chartDelegacion'), { type: 'doughnut', data: { labels: Object.keys(delegaciones), datasets: [{ data: Object.values(delegaciones), backgroundColor: ['#6610f2', '#0d6efd', '#0dcaf0'] }] } });
-                const cats = {}; data.forEach(x => cats[x.categoria] = (cats[x.categoria] || 0) + 1);
-                if (chartCatInstance) chartCatInstance.destroy();
-                chartCatInstance = new Chart(document.getElementById('chartCategoria'), { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: 'Total', data: Object.values(cats), backgroundColor: '#adb5bd', borderRadius: 6 }] }, options: { scales: { y: { beginAtZero: true } } } });
+                const valor = data.reduce((a, b) => a + (b.coste || 0), 0);
+                document.getElementById('valor-total').innerText = valor.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' });
 
-                // TABLAS
-                const tStock = document.getElementById('lista-stock'); tStock.innerHTML = '';
-                const tAsignar = document.getElementById('lista-asignar'); tAsignar.innerHTML = '';
+                // Render Tablas
+                renderTablas(data);
+                renderGraficos(data);
+                cargarActividad();
 
-                data.forEach(a => {
-                    let badgeColor = a.estado === 'Disponible' ? 'bg-success' : (a.estado === 'Asignado' ? 'bg-info' : 'bg-warning text-dark');
-                    tStock.innerHTML += `<tr>
-                        <td class="p-3"><span class="badge-activo">${a.numero_activo || 'N/A'}</span></td>
-                        <td>${a.modelo}</td><td><small>${a.serie}</small></td><td>${a.delegacion}</td>
-                        <td>${(a.coste || 0).toFixed(2)}€</td>
-                        <td><span class="badge ${badgeColor}">${a.estado}</span></td>
-                        <td class="text-end p-3"><button class="btn btn-sm btn-light border" onclick="prepararEditar(${a.id}, '${a.categoria}', '${a.modelo}', '${a.serie}', '${a.numero_activo}', '${a.delegacion}', ${a.coste}, '${a.fecha_compra}')"><i class="bi bi-pencil-fill text-warning"></i></button><button class="btn btn-sm btn-light border ms-1" onclick="prepararBorrar(${a.id})"><i class="bi bi-archive-fill text-danger"></i></button></td>
-                    </tr>`;
-                    tAsignar.innerHTML += `<tr><td class="p-3 fw-bold">${a.modelo}</td><td><div class="small badge-activo">${a.numero_activo || 'N/A'}</div></td><td><span class="badge bg-secondary">${a.usuario}</span></td><td class="text-end p-3"><button class="btn btn-sm btn-primary rounded-pill px-3 me-1" onclick="prepararAsignar(${a.id}, '${a.modelo}', '${a.serie}')">Asignar</button><button class="btn btn-sm btn-outline-secondary rounded-circle" onclick="verHistorial(${a.id}, '${a.modelo}')"><i class="bi bi-clock-history"></i></button></td></tr>`;
-                });
-
-                // QR Auto-open
+                // QR Auto Check
                 const params = new URLSearchParams(window.location.search);
                 if (params.get('buscar')) {
-                    const eq = data.find(d => d.serie === params.get('buscar') || d.numero_activo === params.get('buscar'));
-                    if (eq) { verVentana('v-stock', document.querySelectorAll('.nav-link')[1]); prepararEditar(eq.id, eq.categoria, eq.modelo, eq.serie, eq.numero_activo, eq.delegacion, eq.coste, eq.fecha_compra); window.history.replaceState({}, document.title, window.location.pathname); }
+                    const eq = data.find(d => d.serie === params.get('buscar'));
+                    if (eq) { verVentana('v-stock', document.querySelectorAll('.nav-link')[1]); prepararEditar(eq.id); window.history.replaceState({}, '', location.pathname); }
                 }
-                // Actividad
-                fetch('/actividad').then(r => r.json()).then(act => {
-                    const feed = document.getElementById('feed-actividad'); feed.innerHTML = '';
-                    act.forEach(x => feed.innerHTML += `<div class="mb-3 border-bottom pb-2"><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small><br><strong>${x.modelo}</strong>: ${x.detalle}</div>`);
-                });
-            }).catch(e => { if (e.toString().includes("401")) location.reload(); });
+
+            } catch (e) { console.error(e); }
         }
 
-        // --- ACCIONES ---
-        function guardar() {
-            const d = {
-                categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value,
-                serie: document.getElementById('ser').value, numero_activo: document.getElementById('n-activo').value,
-                delegacion: document.getElementById('del').value || 'Central',
-                coste: parseFloat(document.getElementById('coste').value) || 0,
-                fecha_compra: document.getElementById('fecha-compra').value
-            };
-            if (!d.modelo || !d.serie) return notificar("Datos incompletos", "bg-warning");
-            fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-                .then(r => r.json()).then(res => { if (res.status === 'success') { notificar("Guardado", "bg-success"); cargar(); } else notificar(res.message, "bg-danger"); });
+        function renderTablas(data) {
+            const tStock = document.getElementById('lista-stock'); tStock.innerHTML = '';
+            const tAsignar = document.getElementById('lista-asignar'); tAsignar.innerHTML = '';
+            let delay = 0;
+
+            data.forEach(x => {
+                const color = x.estado === 'Disponible' ? 'success' : (x.estado === 'Asignado' ? 'primary' : 'warning');
+                const rowStyle = `animation-delay: ${delay}ms`; delay += 50;
+
+                tStock.innerHTML += `<tr class="table-row-anim" style="${rowStyle}">
+                    <td class="fw-bold text-muted">#${x.id}</td>
+                    <td><div class="fw-bold">${x.modelo}</div><small class="badge-activo">${x.numero_activo || 'N/A'}</small></td>
+                    <td><code class="text-primary">${x.serie}</code></td>
+                    <td>${x.delegacion}</td>
+                    <td>${(x.coste || 0).toFixed(2)}€</td>
+                    <td><span class="status-dot bg-${color}"></span>${x.estado}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-light text-primary shadow-sm" onclick="prepararEditar(${x.id})"><i class="bi bi-pencil-fill"></i></button>
+                        <button class="btn btn-sm btn-light text-danger shadow-sm ms-1" onclick="borrar(${x.id})"><i class="bi bi-trash-fill"></i></button>
+                    </td>
+                </tr>`;
+
+                tAsignar.innerHTML += `<tr class="table-row-anim" style="${rowStyle}">
+                    <td><div class="fw-bold">${x.modelo}</div><small class="text-muted">${x.numero_activo}</small></td>
+                    <td><code>${x.serie}</code></td>
+                    <td><span class="badge bg-secondary rounded-pill px-3">${x.usuario}</span></td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" onclick="prepararAsignar(${x.id})">Asignar</button>
+                        <button class="btn btn-sm btn-outline-secondary rounded-circle ms-1" onclick="historial(${x.id}, '${x.modelo}')"><i class="bi bi-clock-history"></i></button>
+                    </td>
+                </tr>`;
+            });
         }
 
-        function prepararEditar(id, cat, mod, ser, nAct, del, cost, fecha) {
-            document.getElementById('edit-id').value = id; document.getElementById('edit-cat').value = cat;
-            document.getElementById('edit-mod').value = mod; document.getElementById('edit-ser').value = ser;
-            document.getElementById('edit-n-activo').value = nAct || ''; document.getElementById('edit-del').value = del || 'Central';
-            document.getElementById('edit-coste').value = cost || 0; document.getElementById('edit-fecha').value = fecha || '';
-            const qrC = document.getElementById("qr-code"); qrC.innerHTML = "";
-            new QRCode(qrC, { text: `${window.location.origin}/?buscar=${ser}`, width: 110, height: 110 });
+        // EDICIÓN "INFALIBLE" (Busca por ID)
+        function prepararEditar(id) {
+            const item = globalData.find(x => x.id === id); // MAGIA AQUÍ
+            if (!item) return;
+
+            document.getElementById('edit-id').value = item.id;
+            document.getElementById('edit-n-activo').value = item.numero_activo;
+            document.getElementById('edit-cat').value = item.categoria;
+            document.getElementById('edit-mod').value = item.modelo;
+            document.getElementById('edit-ser').value = item.serie;
+            document.getElementById('edit-del').value = item.delegacion;
+            document.getElementById('edit-coste').value = item.coste;
+            document.getElementById('edit-fecha').value = item.fecha_compra;
+
+            const qr = document.getElementById("qr-code"); qr.innerHTML = "";
+            new QRCode(qr, { text: `${window.location.origin}/?buscar=${item.serie}`, width: 120, height: 120 });
+
             new bootstrap.Modal(document.getElementById('modalEditar')).show();
         }
 
-        function confirmarEdicion() {
+        async function confirmarEdicion() {
             const id = document.getElementById('edit-id').value;
-            const d = {
-                categoria: document.getElementById('edit-cat').value, modelo: document.getElementById('edit-mod').value,
-                serie: document.getElementById('edit-ser').value, numero_activo: document.getElementById('edit-n-activo').value,
+            const body = {
+                categoria: document.getElementById('edit-cat').value,
+                modelo: document.getElementById('edit-mod').value,
+                serie: document.getElementById('edit-ser').value,
+                numero_activo: document.getElementById('edit-n-activo').value,
                 delegacion: document.getElementById('edit-del').value,
                 coste: parseFloat(document.getElementById('edit-coste').value) || 0,
                 fecha_compra: document.getElementById('edit-fecha').value
             };
-            fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) })
-                .then(r => r.json()).then(res => { if (res.status === 'success') { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("Actualizado", "bg-success"); cargar(); } });
+
+            const res = await fetch(`/actualizar/${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+                Swal.fire({ icon: 'success', title: 'Actualizado', timer: 1500, showConfirmButton: false });
+                cargar();
+            } else Swal.fire('Error', 'No se pudo actualizar', 'error');
         }
 
-        function marcarReparacion() {
-            const id = document.getElementById('edit-id').value;
-            const nota = prompt("Describe la avería:");
-            if (!nota) return;
-            fetch('/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: id, estado: 'En Reparación', nota: nota }) })
-                .then(() => { bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide(); notificar("Marcado en Reparación", "bg-warning"); cargar(); });
+        // GUARDAR NUEVO
+        async function guardar() {
+            const body = {
+                categoria: document.getElementById('cat').value, modelo: document.getElementById('mod').value, serie: document.getElementById('ser').value,
+                numero_activo: document.getElementById('n-activo').value, delegacion: document.getElementById('del').value || 'Central',
+                coste: parseFloat(document.getElementById('coste').value) || 0, fecha_compra: document.getElementById('fecha-compra').value
+            };
+            if (!body.modelo || !body.serie) return Swal.fire('Ups', 'Faltan datos obligatorios', 'warning');
+
+            const res = await fetch('/crear', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+            const json = await res.json();
+            if (json.status === 'success') {
+                Swal.fire({ icon: 'success', title: 'Guardado', timer: 1500, showConfirmButton: false });
+                toggleForm(); cargar();
+            } else Swal.fire('Error', json.message, 'error');
         }
 
-        // --- REPORTES PDF CORREGIDOS (AutoTable) ---
-        function imprimirFichaTecnica() {
-            const id = document.getElementById('edit-id').value;
-            const mod = document.getElementById('edit-mod').value;
-            const ser = document.getElementById('edit-ser').value;
-            const nAct = document.getElementById('edit-n-activo').value;
+        // OTRAS FUNCIONES (ASIGNAR, REPARAR, BORRAR)
+        function prepararAsignar(id) { document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
+        async function confirmarAsignacion() {
+            const id = document.getElementById('id-asignar-temp').value;
+            const u = document.getElementById('nombre-usuario-modal').value;
+            if (!u) return;
+            const res = await fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) });
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide();
+                const { isConfirmed } = await Swal.fire({ title: '¡Asignado!', text: '¿Quieres descargar el Acta de Entrega?', icon: 'success', showCancelButton: true, confirmButtonText: 'Sí, descargar PDF' });
+                if (isConfirmed) generarPDF(u);
+                cargar();
+            }
+        }
 
-            fetch(`/historial/${id}`).then(r => r.json()).then(hist => {
-                // ACCESO SEGURO A JSPDF
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+        async function marcarReparacion() {
+            const { value: text } = await Swal.fire({ input: 'textarea', inputLabel: 'Motivo de Avería', inputPlaceholder: 'Escribe aquí...', showCancelButton: true });
+            if (text) {
+                const id = document.getElementById('edit-id').value;
+                await fetch('/estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, estado: 'En Reparación', nota: text }) });
+                bootstrap.Modal.getInstance(document.getElementById('modalEditar')).hide();
+                cargar();
+            }
+        }
 
-                doc.setFontSize(20); doc.text("FICHA DE ACTIVO", 105, 20, null, null, "center");
-                doc.setFontSize(10); doc.text(`Generado: ${new Date().toLocaleDateString()}`, 105, 28, null, null, "center");
+        function borrar(id) {
+            Swal.fire({ title: '¿Estás seguro?', text: "El equipo se archivará", icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', confirmButtonText: 'Sí, archivar' }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await fetch(`/eliminar/${id}`, { method: 'DELETE' });
+                    Swal.fire('Archivado', 'El equipo ha sido ocultado.', 'success');
+                    cargar();
+                }
+            })
+        }
 
-                doc.setFillColor(240, 240, 240); doc.rect(14, 35, 182, 30, 'F');
-                doc.setFontSize(12); doc.setFont("helvetica", "bold");
-                doc.text(`Modelo: ${mod}`, 20, 45);
-                doc.text(`Serie: ${ser}`, 20, 55);
-                doc.text(`Etiqueta Interna: ${nAct}`, 100, 45);
+        // CHARTS & HELPERS
+        function renderGraficos(data) {
+            const ctx1 = document.getElementById('chartCategoria');
+            const ctx2 = document.getElementById('chartDelegacion');
 
-                // TABLA CON AUTOTABLE (Plugin)
-                const filas = hist.map(h => [new Date(h.fecha).toLocaleString(), h.detalle]);
-                doc.autoTable({
-                    startY: 75,
-                    head: [['Fecha', 'Movimiento']],
-                    body: filas,
-                    theme: 'grid',
-                    headStyles: { fillColor: [41, 128, 185] }
-                });
+            const cats = {}, dels = {};
+            data.forEach(x => { cats[x.categoria] = (cats[x.categoria] || 0) + 1; dels[x.delegacion] = (dels[x.delegacion] || 0) + 1; });
 
-                doc.save(`Ficha_${ser}.pdf`);
+            if (chart1) chart1.destroy();
+            chart1 = new Chart(ctx1, { type: 'bar', data: { labels: Object.keys(cats), datasets: [{ label: 'Stock', data: Object.values(cats), backgroundColor: '#0d6efd', borderRadius: 5 }] }, options: { scales: { y: { beginAtZero: true } } } });
+
+            if (chart2) chart2.destroy();
+            chart2 = new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(dels), datasets: [{ data: Object.values(dels), backgroundColor: ['#6610f2', '#0dcaf0', '#20c997'] }] } });
+        }
+
+        function cargarActividad() {
+            fetch('/actividad').then(r => r.json()).then(data => {
+                const f = document.getElementById('feed-actividad'); f.innerHTML = '';
+                data.forEach(x => f.innerHTML += `<div class="p-3 mb-2 bg-light rounded shadow-sm border-start border-4 border-primary"><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small><div class="fw-bold">${x.modelo}</div><div>${x.detalle}</div></div>`);
             });
         }
 
-        function generarPDFEntrega(u) {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-            doc.setFontSize(22); doc.text("ACTA DE ENTREGA", 105, 20, null, null, "center");
-            doc.setFontSize(12); doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 40);
-            doc.setDrawColor(0); doc.setFillColor(245, 245, 245); doc.rect(20, 50, 170, 35, 'FD');
-            doc.text(`Responsable: ${u}`, 25, 60); doc.text(`Equipo: ${window.tempModelo || ''}`, 25, 70); doc.text(`Serie: ${window.tempSerie || ''}`, 25, 80);
-            doc.text("El usuario recibe el equipo en perfecto estado y se compromete", 20, 100);
-            doc.text("a su correcto uso y mantenimiento.", 20, 106);
-            doc.line(40, 150, 90, 150); doc.text("Firma Usuario", 40, 155);
-            doc.line(120, 150, 170, 150); doc.text("Firma IT Dept", 120, 155);
+        function generarPDF(u) {
+            const { jsPDF } = window.jspdf; const doc = new jsPDF();
+            doc.text("ACTA DE ENTREGA", 105, 20, null, null, "center");
+            doc.text(`Responsable: ${u}`, 20, 40); doc.text(`Fecha: ${new Date().toLocaleDateString()}`, 20, 50);
+            doc.line(20, 100, 80, 100); doc.text("Firma", 20, 105);
             doc.save(`Acta_${u}.pdf`);
         }
 
-        // Helpers
-        function imprimirQR() { const c = document.getElementById('qr-code').innerHTML, s = document.getElementById('edit-ser').value; const w = window.open('', '', 'height=400,width=400'); w.document.write(`<html><body style="display:flex;justify-content:center;align-items:center;height:100vh;font-family:sans-serif"><div style="border:2px solid black;padding:20px;text-align:center;border-radius:10px"><h3>IT ASSET</h3>${c}<p>${s}</p></div></body></html>`); w.document.close(); setTimeout(() => { w.print(); w.close() }, 500); }
-        function subirExcel(i) { if (!i.files[0]) return; let f = new FormData(); f.append("file", i.files[0]); notificar("Subiendo...", "bg-info"); fetch('/importar', { method: 'POST', body: f }).then(r => r.json()).then(d => { notificar(d.message, d.status === 'success' ? 'bg-success' : 'bg-danger'); cargar(); i.value = '' }) }
-        async function confirmarAsignacion() { const id = document.getElementById('id-asignar-temp').value, u = document.getElementById('nombre-usuario-modal').value; if (!u) return; const res = await fetch('/asignar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, usuario: u }) }); if (res.ok) { bootstrap.Modal.getInstance(document.getElementById('modalAsignar')).hide(); notificar("Asignado", "bg-primary"); cargar(); if (confirm("¿PDF?")) generarPDFEntrega(u); } }
-        function prepararAsignar(id, mod, ser) { window.tempModelo = mod; window.tempSerie = ser; document.getElementById('id-asignar-temp').value = id; new bootstrap.Modal(document.getElementById('modalAsignar')).show(); }
-        function prepararBorrar(id) { document.getElementById('id-borrar-temp').value = id; new bootstrap.Modal(document.getElementById('modalBorrar')).show(); }
-        function confirmarBorrado() { const id = document.getElementById('id-borrar-temp').value; fetch(`/eliminar/${id}`, { method: 'DELETE' }).then(() => { bootstrap.Modal.getInstance(document.getElementById('modalBorrar')).hide(); notificar("Archivado", "bg-warning"); cargar(); }) }
-        function verHistorial(id, mod) { fetch(`/historial/${id}`).then(r => r.json()).then(d => { document.getElementById('tituloHistorial').innerText = `Historial: ${mod}`; let h = '<ul class="list-group list-group-flush">'; d.forEach(x => h += `<li class="list-group-item bg-transparent"><small class="text-muted">${new Date(x.fecha).toLocaleString()}</small><br><strong>${x.detalle}</strong></li>`); document.getElementById('cuerpoHistorial').innerHTML = h + '</ul>'; new bootstrap.Modal(document.getElementById('modalHistorial')).show(); }) }
-        function filtrar() { const v = document.getElementById('buscador').value.toLowerCase(); document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none') }
+        function imprimirQR() {
+            const c = document.getElementById('qr-code').innerHTML, s = document.getElementById('edit-ser').value;
+            const w = window.open('', '', 'height=400,width=400'); w.document.write(`<html><body style="display:flex;justify-content:center;align-items:center;height:100vh">${c}<br>${s}</body></html>`);
+            w.document.close(); setTimeout(() => w.print(), 500);
+        }
+
+        function imprimirFichaTecnica() {
+            const id = document.getElementById('edit-id').value;
+            fetch(`/historial/${id}`).then(r => r.json()).then(h => {
+                const { jsPDF } = window.jspdf; const doc = new jsPDF();
+                doc.text(`FICHA TÉCNICA - ${document.getElementById('edit-mod').value}`, 20, 20);
+                doc.autoTable({ startY: 30, head: [['Fecha', 'Detalle']], body: h.map(x => [new Date(x.fecha).toLocaleString(), x.detalle]) });
+                doc.save('ficha.pdf');
+            });
+        }
+
+        function subirExcel(i) {
+            let fd = new FormData(); fd.append("file", i.files[0]);
+            fetch('/importar', { method: 'POST', body: fd }).then(r => r.json()).then(res => { Swal.fire('Importado', res.message, 'success'); cargar(); });
+        }
+
+        function filtrar() {
+            const v = document.getElementById('buscador').value.toLowerCase();
+            document.querySelectorAll('#lista-asignar tr').forEach(r => r.style.display = r.innerText.toLowerCase().includes(v) ? '' : 'none');
+        }
 
         cargar();
     </script>

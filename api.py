@@ -15,7 +15,6 @@ from io import BytesIO
 app = FastAPI()
 security = HTTPBasic()
 
-# --- SEGURIDAD ---
 def check_credentials(credentials: HTTPBasicCredentials = Depends(security)):
     correct_username = secrets.compare_digest(credentials.username, "admin")
     correct_password = secrets.compare_digest(credentials.password, "supersecreto123")
@@ -36,19 +35,18 @@ class ActivoSchema(BaseModel):
     serie: str
     numero_activo: str
     delegacion: str
-    coste: Optional[float] = 0.0  # NUEVO
-    fecha_compra: Optional[str] = "" # NUEVO
+    coste: Optional[float] = 0.0
+    fecha_compra: Optional[str] = ""
 
 class AsignacionSchema(BaseModel):
     id: int
     usuario: str
 
-class EstadoSchema(BaseModel): # NUEVO: Para cambiar estado (Reparación)
+class EstadoSchema(BaseModel):
     id: int
     estado: str
     nota: str
 
-# --- BASE DE DATOS ---
 try:
     db_pool = psycopg2.pool.SimpleConnectionPool(1, 20, dsn=os.getenv("DATABASE_URL"))
     print("✅ BD Conectada")
@@ -72,13 +70,11 @@ def inicializar_db():
                 categoria TEXT, modelo TEXT, serie TEXT UNIQUE,
                 estado TEXT DEFAULT 'Disponible', usuario TEXT DEFAULT 'N/A',
                 activo BOOLEAN DEFAULT TRUE,
-                numero_activo TEXT DEFAULT '', delegacion TEXT DEFAULT 'Central'
+                numero_activo TEXT DEFAULT '', delegacion TEXT DEFAULT 'Central',
+                coste NUMERIC(10,2) DEFAULT 0, fecha_compra TEXT DEFAULT ''
             )''')
-        
-        # MIGRACIONES: Añadir columnas financieras si no existen
         cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS coste NUMERIC(10,2) DEFAULT 0")
         cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS fecha_compra TEXT DEFAULT ''")
-        
         cur.execute('''
             CREATE TABLE IF NOT EXISTS historial (
                 id SERIAL PRIMARY KEY,
@@ -92,7 +88,7 @@ def inicializar_db():
 
 inicializar_db()
 
-# --- RUTAS ---
+# --- ENDPOINTS ---
 
 @app.get("/")
 def home(user: str = Depends(check_credentials)):
@@ -114,11 +110,7 @@ def actividad_reciente():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
-        cur.execute("""
-            SELECT h.detalle, h.fecha, a.modelo, a.numero_activo 
-            FROM historial h JOIN activos a ON h.activo_id = a.id 
-            ORDER BY h.fecha DESC LIMIT 10
-        """)
+        cur.execute("SELECT h.detalle, h.fecha, a.modelo, a.numero_activo FROM historial h JOIN activos a ON h.activo_id = a.id ORDER BY h.fecha DESC LIMIT 10")
         return cur.fetchall()
     finally:
         cur.close()
@@ -131,51 +123,27 @@ def crear(activo: ActivoSchema):
         cur = conn.cursor()
         cur.execute("SELECT id, activo FROM activos WHERE serie = %s", (activo.serie,))
         existe = cur.fetchone()
-        
         if existe:
-            if existe[1] is True:
-                return {"status": "error", "message": "Serie duplicada"}
-            else: 
-                cur.execute("""
-                    UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, 
-                    numero_activo=%s, delegacion=%s, coste=%s, fecha_compra=%s,
-                    estado='Disponible', usuario='N/A' WHERE id=%s
-                """, (activo.categoria, activo.modelo, activo.numero_activo, activo.delegacion, 
-                      activo.coste, activo.fecha_compra, existe[0]))
-                cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, 'Equipo reactivado')", (existe[0],))
-                conn.commit()
-                return {"status": "success", "message": "Equipo reactivado"}
-
-        cur.execute("""
-            INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion, coste, fecha_compra) 
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra))
+            if existe[1] is True: return {"status": "error", "message": "Serie duplicada"}
+            cur.execute("UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, numero_activo=%s, delegacion=%s, coste=%s, fecha_compra=%s, estado='Disponible' WHERE id=%s", (activo.categoria, activo.modelo, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra, existe[0]))
+            conn.commit()
+            return {"status": "success", "message": "Reactivado"}
+        cur.execute("INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion, coste, fecha_compra) VALUES (%s, %s, %s, %s, %s, %s, %s)", (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-    finally:
-        release_conn(conn)
+    except Exception as e: return {"status": "error", "message": str(e)}
+    finally: release_conn(conn)
 
 @app.put("/actualizar/{id}", dependencies=[Depends(check_credentials)])
 def actualizar(id: int, activo: ActivoSchema):
     conn = get_conn()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id FROM activos WHERE serie = %s AND id != %s", (activo.serie, id))
-        if cur.fetchone(): return {"status": "error", "message": "Serie duplicada"}
-        
-        cur.execute("""
-            UPDATE activos SET categoria=%s, modelo=%s, serie=%s, numero_activo=%s, 
-            delegacion=%s, coste=%s, fecha_compra=%s WHERE id=%s
-        """, (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, 
-              activo.delegacion, activo.coste, activo.fecha_compra, id))
+        cur.execute("UPDATE activos SET categoria=%s, modelo=%s, serie=%s, numero_activo=%s, delegacion=%s, coste=%s, fecha_compra=%s WHERE id=%s", (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, activo.coste, activo.fecha_compra, id))
         conn.commit()
         return {"status": "success"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-    finally:
-        release_conn(conn)
+    except Exception as e: return {"status": "error", "message": str(e)}
+    finally: release_conn(conn)
 
 @app.post("/asignar", dependencies=[Depends(check_credentials)])
 def asignar(datos: AsignacionSchema):
@@ -186,24 +154,19 @@ def asignar(datos: AsignacionSchema):
         cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, %s)", (datos.id, f"Asignado a {datos.usuario}"))
         conn.commit()
         return {"status": "success"}
-    finally:
-        release_conn(conn)
+    finally: release_conn(conn)
 
-# NUEVO: Endpoint para cambiar estado (ej: Reparación)
 @app.post("/estado", dependencies=[Depends(check_credentials)])
-def cambiar_estado(datos: EstadoSchema):
+def estado(datos: EstadoSchema):
     conn = get_conn()
     try:
         cur = conn.cursor()
-        # Si entra en reparación, quitamos usuario. Si vuelve a disponible, también.
-        usuario = 'N/A' if datos.estado in ['Disponible', 'En Reparación'] else 'N/A'
-        
-        cur.execute("UPDATE activos SET estado=%s, usuario=%s WHERE id=%s", (datos.estado, usuario, datos.id))
-        cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, %s)", (datos.id, f"Cambio estado: {datos.estado}. Nota: {datos.nota}"))
+        u = 'N/A' if datos.estado in ['Disponible', 'En Reparación'] else 'N/A'
+        cur.execute("UPDATE activos SET estado=%s, usuario=%s WHERE id=%s", (datos.estado, u, datos.id))
+        cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, %s)", (datos.id, f"Estado: {datos.estado}. {datos.nota}"))
         conn.commit()
         return {"status": "success"}
-    finally:
-        release_conn(conn)
+    finally: release_conn(conn)
 
 @app.delete("/eliminar/{id}", dependencies=[Depends(check_credentials)])
 def eliminar(id: int):
@@ -213,8 +176,7 @@ def eliminar(id: int):
         cur.execute("UPDATE activos SET activo = FALSE WHERE id = %s", (id,))
         conn.commit()
         return {"status": "success"}
-    finally:
-        release_conn(conn)
+    finally: release_conn(conn)
 
 @app.get("/historial/{id}", dependencies=[Depends(check_credentials)])
 def historial(id: int):
@@ -223,8 +185,7 @@ def historial(id: int):
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("SELECT detalle, fecha FROM historial WHERE activo_id = %s ORDER BY fecha DESC", (id,))
         return cur.fetchall()
-    finally:
-        release_conn(conn)
+    finally: release_conn(conn)
 
 @app.get("/exportar")
 def exportar():
@@ -232,48 +193,33 @@ def exportar():
     try:
         df = pd.read_sql("SELECT * FROM activos WHERE activo = TRUE", conn)
         output = BytesIO()
-        with pd.ExcelWriter(output, engine='openpyxl') as writer:
-            df.to_excel(writer, index=False)
+        with pd.ExcelWriter(output, engine='openpyxl') as writer: df.to_excel(writer, index=False)
         output.seek(0)
-        return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=inventario_completo.xlsx"})
-    finally:
-        release_conn(conn)
+        return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=inventario.xlsx"})
+    finally: release_conn(conn)
 
 @app.post("/importar", dependencies=[Depends(check_credentials)])
-def importar_excel(file: UploadFile = File(...)):
+def importar(file: UploadFile = File(...)):
     conn = get_conn()
     try:
-        contents = file.file.read()
-        df = pd.read_excel(BytesIO(contents), engine='openpyxl')
-        
-        # Rellenar faltantes
-        for col in ['numero_activo', 'delegacion', 'fecha_compra']:
-            if col not in df.columns: df[col] = ''
-        if 'coste' not in df.columns: df['coste'] = 0
-
+        df = pd.read_excel(BytesIO(file.file.read()), engine='openpyxl')
+        for c in ['numero_activo','delegacion','fecha_compra']: 
+            if c not in df.columns: df[c]=''
+        if 'coste' not in df.columns: df['coste']=0
         cur = conn.cursor()
-        contador = 0
-        for _, row in df.iterrows():
+        n=0
+        for _, r in df.iterrows():
             try:
-                cur.execute("SELECT id FROM activos WHERE serie = %s", (str(row['serie']),))
+                cur.execute("SELECT id FROM activos WHERE serie=%s",(str(r['serie']),))
                 if not cur.fetchone():
-                    cur.execute(
-                        """INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion, coste, fecha_compra) 
-                           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
-                        (row['categoria'], row['modelo'], str(row['serie']), str(row['numero_activo']), 
-                         str(row['delegacion']), float(row['coste'] or 0), str(row['fecha_compra']))
-                    )
-                    contador += 1
-            except:
-                conn.rollback(); continue
+                    cur.execute("INSERT INTO activos (categoria,modelo,serie,numero_activo,delegacion,coste,fecha_compra) VALUES (%s,%s,%s,%s,%s,%s,%s)",(r['categoria'],r['modelo'],str(r['serie']),str(r['numero_activo']),str(r['delegacion']),float(r['coste'] or 0),str(r['fecha_compra'])))
+                    n+=1
+            except: conn.rollback(); continue
         conn.commit()
-        return {"status": "success", "message": f"Importados: {contador}"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
-    finally:
-        release_conn(conn)
+        return {"status":"success", "message":f"Importados: {n}"}
+    except Exception as e: return {"status":"error", "message":str(e)}
+    finally: release_conn(conn)
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
