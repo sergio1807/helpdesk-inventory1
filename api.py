@@ -29,10 +29,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# --- NUEVO MODELO DE DATOS ---
 class ActivoSchema(BaseModel):
     categoria: str
     modelo: str
     serie: str
+    numero_activo: str  # NUEVO: Etiqueta interna (ej: IT-001)
+    delegacion: str     # NUEVO: Sede (ej: Madrid)
 
 class AsignacionSchema(BaseModel):
     id: int
@@ -56,6 +59,7 @@ def inicializar_db():
     conn = get_conn()
     try:
         cur = conn.cursor()
+        # 1. Crear tabla base
         cur.execute('''
             CREATE TABLE IF NOT EXISTS activos (
                 id SERIAL PRIMARY KEY,
@@ -63,9 +67,13 @@ def inicializar_db():
                 estado TEXT DEFAULT 'Disponible', usuario TEXT DEFAULT 'N/A',
                 activo BOOLEAN DEFAULT TRUE
             )''')
-        # Aseguramos columna 'activo' para soft delete
-        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE")
         
+        # 2. ACTUALIZACIÓN AUTOMÁTICA DE COLUMNAS (MIGRACIONES)
+        # Si ya tienes la BD creada, esto añadirá las columnas sin borrar nada
+        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS numero_activo TEXT DEFAULT ''")
+        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS delegacion TEXT DEFAULT 'Central'")
+        cur.execute("ALTER TABLE activos ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE")
+
         cur.execute('''
             CREATE TABLE IF NOT EXISTS historial (
                 id SERIAL PRIMARY KEY,
@@ -90,6 +98,7 @@ def leer_activos():
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
+        # Ahora traemos todo
         cur.execute("SELECT * FROM activos WHERE activo = TRUE ORDER BY id DESC")
         return cur.fetchall()
     finally:
@@ -98,12 +107,11 @@ def leer_activos():
 
 @app.get("/actividad", dependencies=[Depends(check_credentials)])
 def actividad_reciente():
-    """Devuelve los últimos 10 movimientos globales para el Dashboard"""
     conn = get_conn()
     try:
         cur = conn.cursor(cursor_factory=RealDictCursor)
         cur.execute("""
-            SELECT h.detalle, h.fecha, a.modelo 
+            SELECT h.detalle, h.fecha, a.modelo, a.numero_activo 
             FROM historial h 
             JOIN activos a ON h.activo_id = a.id 
             ORDER BY h.fecha DESC LIMIT 10
@@ -123,16 +131,25 @@ def crear(activo: ActivoSchema):
         
         if existe:
             if existe[1] is True:
-                return {"status": "error", "message": "Serie duplicada"}
-            else: # Reactivar equipo borrado
-                cur.execute("UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, estado='Disponible', usuario='N/A' WHERE id=%s", 
-                           (activo.categoria, activo.modelo, existe[0]))
-                cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, 'Equipo reactivado')", (existe[0],))
+                return {"status": "error", "message": "Número de Serie duplicado"}
+            else: 
+                # Reactivar y actualizar datos nuevos
+                cur.execute("""
+                    UPDATE activos SET activo = TRUE, categoria=%s, modelo=%s, 
+                    numero_activo=%s, delegacion=%s, estado='Disponible', usuario='N/A' 
+                    WHERE id=%s
+                """, (activo.categoria, activo.modelo, activo.numero_activo, activo.delegacion, existe[0]))
+                
+                cur.execute("INSERT INTO historial (activo_id, detalle) VALUES (%s, 'Equipo reactivado y actualizado')", (existe[0],))
                 conn.commit()
                 return {"status": "success", "message": "Equipo reactivado"}
 
-        cur.execute("INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)",
-                    (activo.categoria, activo.modelo, activo.serie))
+        # Insertar con los nuevos campos
+        cur.execute("""
+            INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion) 
+            VALUES (%s, %s, %s, %s, %s)
+        """, (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion))
+        
         conn.commit()
         return {"status": "success"}
     except Exception as e:
@@ -147,7 +164,12 @@ def actualizar(id: int, activo: ActivoSchema):
         cur = conn.cursor()
         cur.execute("SELECT id FROM activos WHERE serie = %s AND id != %s", (activo.serie, id))
         if cur.fetchone(): return {"status": "error", "message": "Serie duplicada"}
-        cur.execute("UPDATE activos SET categoria=%s, modelo=%s, serie=%s WHERE id=%s", (activo.categoria, activo.modelo, activo.serie, id))
+        
+        cur.execute("""
+            UPDATE activos SET categoria=%s, modelo=%s, serie=%s, numero_activo=%s, delegacion=%s 
+            WHERE id=%s
+        """, (activo.categoria, activo.modelo, activo.serie, activo.numero_activo, activo.delegacion, id))
+        
         conn.commit()
         return {"status": "success"}
     except Exception as e:
@@ -197,7 +219,7 @@ def exportar():
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df.to_excel(writer, index=False)
         output.seek(0)
-        return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=inventario.xlsx"})
+        return StreamingResponse(output, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=inventario_completo.xlsx"})
     finally:
         release_conn(conn)
 
@@ -206,13 +228,11 @@ def importar_excel(file: UploadFile = File(...)):
     conn = get_conn()
     try:
         contents = file.file.read()
-        # Forzamos engine openpyxl para evitar errores de compatibilidad
         df = pd.read_excel(BytesIO(contents), engine='openpyxl')
         
-        # Validar columnas mínimas
-        required = {'categoria', 'modelo', 'serie'}
-        if not required.issubset(df.columns):
-            return {"status": "error", "message": f"El Excel debe tener columnas: {required}"}
+        # Rellenar columnas faltantes si el excel es antiguo
+        if 'numero_activo' not in df.columns: df['numero_activo'] = ''
+        if 'delegacion' not in df.columns: df['delegacion'] = 'Central'
 
         cur = conn.cursor()
         contador = 0
@@ -220,23 +240,22 @@ def importar_excel(file: UploadFile = File(...)):
         
         for _, row in df.iterrows():
             try:
-                # Verificar si existe (incluyendo borrados)
                 cur.execute("SELECT id FROM activos WHERE serie = %s", (str(row['serie']),))
                 if not cur.fetchone():
                     cur.execute(
-                        "INSERT INTO activos (categoria, modelo, serie) VALUES (%s, %s, %s)",
-                        (row['categoria'], row['modelo'], str(row['serie']))
+                        "INSERT INTO activos (categoria, modelo, serie, numero_activo, delegacion) VALUES (%s, %s, %s, %s, %s)",
+                        (row['categoria'], row['modelo'], str(row['serie']), str(row['numero_activo']), str(row['delegacion']))
                     )
                     contador += 1
             except:
                 errores += 1
-                conn.rollback() # Rollback parcial si falla una fila
+                conn.rollback()
                 continue
                 
         conn.commit()
-        return {"status": "success", "message": f"Importados: {contador}. Errores/Duplicados: {errores}"}
+        return {"status": "success", "message": f"Importados: {contador}. Errores: {errores}"}
     except Exception as e:
-        return {"status": "error", "message": f"Error procesando archivo: {str(e)}"}
+        return {"status": "error", "message": f"Error: {str(e)}"}
     finally:
         release_conn(conn)
 
